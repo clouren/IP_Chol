@@ -1,0 +1,177 @@
+//------------------------------------------------------------------------------
+// IP_Chol/IP_Left_Chol_triangular_solve: sparse symmetric left-looking triangular solve
+//------------------------------------------------------------------------------
+
+// IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
+// Texas A&M University.  All Rights Reserved.  See IP_Chol/License for the license.
+
+//------------------------------------------------------------------------------
+
+#include "../Include/IP-Chol.h"
+
+static inline int32_t compare4 (const void * a, const void * b)
+{
+    return ( *(int32_t*)a - *(int32_t*)b );
+}
+
+
+/* Purpose: This function performs the symmetric sparse REF triangular solve. i.e., 
+ * (LD) x = A(:,k). 
+ */
+int IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
+(
+    SLIP_sparse* L,              // partial L matrix
+    SLIP_sparse* A,              // input matrix
+    int k,                    // iteration of algorithm
+    int* xi,                  // nonzero pattern vector
+    mpz_t* rhos,              // sequence of pivots
+    int* pinv,                // inverse row permutation
+    int* h,                   // history vector
+    mpz_t* x,                  // solution of system ==> kth column of L and U
+    int* parent,
+    int* c
+)
+{
+    SLIP_info ok;
+    if (!L || !A || !xi || !rhos || !pinv || !h || !x)
+        return SLIP_INCORRECT_INPUT;
+    int j, jnew, i, inew, p, m, top, n, col;
+
+    //--------------------------------------------------------------------------
+    // Initialize REF TS by getting nonzero patern of x && obtaining A(:,k)
+    //--------------------------------------------------------------------------
+    n = A->n;                                // Size of matrix and the dense vectors
+   
+    /* Chol_ereach gives the nonzeros located in L(k,:) upon completion
+     * the vector xi contains the indices of the first k-1 nonzeros in column
+     * k of L 
+     */
+    top = IP_Chol_ereach(A, k, parent, xi, c);
+    
+    j = top; // Store where the first k-1 nonzeros end
+    
+    // Populate the rest of the nonzero pattern
+    for (i = L->p[k]; i < L->p[k+1]; i++)
+    {
+        top -= 1;           // One more nonzero in column k
+        xi[top] = L->i[i];  // Index of the new nonzero
+    }
+    
+    // Reset the array
+    OK(IP_reset_mpz_array(x, n, top, xi));
+    
+    // Now we obtain the values of the first k-1 entries of x
+    for (i = j; i < n; i++)
+    {
+        m = xi[i];
+        p = c[m]++;
+        p+=1;
+        mpz_set(x[m], L->x[p]);
+    }
+
+    for (i = A->p[k]; i < A->p[k+1]; i++)
+    {
+        if ( A->i[i] >= k)
+        {
+            OK(SLIP_mpz_set(x[A->i[i]], A->x[i]));
+        }
+    }
+    qsort(&xi[top], n-top, sizeof(int32_t), compare4);
+    OK(IP_reset_int_array2(h,n,top,xi));      // Reset h[i] = -1 for all i in nonzero pattern
+        
+    //--------------------------------------------------------------------------
+    // Iterate accross nonzeros in x
+    //--------------------------------------------------------------------------
+    for ( p = top; p < n; p++)
+    {   
+        /* Finalize x[j] */
+        j = xi[p];                        // First nonzero term
+        if (mpz_sgn(x[j]) == 0) continue;// If x[j] == 0 no work must be done
+        if (j < k)                    // jnew < k implies entries in U
+        {
+            //------------------------------------------------------------------
+            // IPGE updates
+            //------------------------------------------------------------------
+            // ----------- Iterate accross nonzeros in Lij ---------------------
+            for (m = L->p[j]; m < L->p[j+1]; m++)
+            {
+                i = L->i[m];            // i value of Lij
+                if (i > j && i >= k)
+                {
+                    /*************** If lij==0 then no update******************/
+                    if (mpz_sgn(L->x[m]) == 0) continue;
+
+                    //----------------------------------------------------------
+                    /************* lij is nonzero, x[i] is zero****************/
+                    // x[i] = 0 then only perform IPGE update subtraction/division
+                    //----------------------------------------------------------
+                    if (mpz_sgn(x[i]) == 0)
+                    {
+                        // No previous pivot
+                        if (j < 1)
+                        {
+                            OK(SLIP_mpz_submul(x[i],L->x[m],x[j]));// x[i] = 0 - lij*x[j]
+                            h[i] = j;                  // Entry is up to date
+                        }
+                        
+                        // Previous pivot exists
+                        else
+                        {
+                            OK(SLIP_mpz_submul(x[i],L->x[m],x[j]));// x[i] = 0 - lij*x[j]
+                            OK(SLIP_mpz_divexact(x[i],x[i],rhos[j-1]));// x[i] = x[i] / rho[j-1]
+                            h[i] = j;                  // Entry is up to date
+                        }
+                    }
+
+                    //----------------------------------------------------------
+                    /************ Both lij and x[i] are nonzero****************/
+                    // x[i] != 0 --> History & IPGE update on x[i]
+                    //----------------------------------------------------------
+                    else
+                    {
+                        // No previous pivot in this case
+                        if (j < 1)
+                        {
+                            OK(SLIP_mpz_mul(x[i],x[i],rhos[0]));      // x[i] = x[i]*rho[0]
+                            OK(SLIP_mpz_submul(x[i], L->x[m], x[j]));// x[i] = x[i] - lij*xj
+                            h[i] = j;                  // Entry is now up to date
+                        }
+                        // There is a previous pivot
+                        else
+                        {
+                            // History update if necessary
+                            if (h[i] < j - 1)
+                            {
+                                OK(SLIP_mpz_mul(x[i],x[i],rhos[j-1]));// x[i] = x[i] * rho[j-1]
+                                if (h[i] > -1)
+                                {
+                                    OK(SLIP_mpz_divexact(x[i],x[i],rhos[h[i]]));// x[i] = x[i] / rho[h[i]]
+                                }
+                            }
+                            OK(SLIP_mpz_mul(x[i],x[i],rhos[j]));// x[i] = x[i] * rho[j]
+                            OK(SLIP_mpz_submul(x[i], L->x[m], x[j]));// x[i] = x[i] - lij*xj
+                            OK(SLIP_mpz_divexact(x[i],x[i],rhos[j-1]));// x[i] = x[i] / rho[j-1] 
+                            h[i] = j;                  // Entry is up to date
+                        }
+                    }
+                }
+            }
+        }
+        else                                              // Entries of L
+        {
+            //------------------------------------------------------------------
+            // History update
+            //------------------------------------------------------------------
+            if (h[j] < k-1)
+            {
+                OK(SLIP_mpz_mul(x[j],x[j],rhos[k-1]));           // x[j] = x[j] * rho[k-1]
+                if (h[j] > -1)
+                {
+                    OK(SLIP_mpz_divexact(x[j],x[j],rhos[h[j]]));// x[j] = x[j] / rho[h[j]]
+                }
+            }
+        }
+    }
+    // Output the beginning of nonzero pattern
+    return top;
+}
