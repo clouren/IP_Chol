@@ -118,6 +118,8 @@
 #define IP_Chol
 
 
+
+
 // IP-Chol inherits many functions, GMP wrappers, etc from SLIP LU. Indeed, IP-Chol is part
 // of a suite of exact, integer-preserving sparse matrix software.
 // It also inherits the same set of external header files as SLIP LU which includes:
@@ -276,7 +278,6 @@
         return 0 ;                      \
     }                                   \
 }                                       \
-
 
 //------------------------------------------------------------------------------
 // Sym_chol is the data structure for symbolic analysis in the IP-Cholesky 
@@ -646,6 +647,33 @@ SLIP_info IP_tripread_double
     int *n,
     int *nz,
     SLIP_options* option
+);
+
+/* Purpose: Determine error in IP Chol, demo only */
+
+void IP_determine_error
+(
+    SLIP_info ok;
+);
+
+/* Purpose: Determine if the input A is indeed symmetric prior to factorization.
+ * There are two options as to how to determine the symmetry. 
+ * By setting the input exhaustive = 1, both the nonzero pattern and the values
+ * of the nonzero entries are checked for symmetry. If A passes both of these tests,
+ * then we can be sure it is indeed fully symmetric.
+ * 
+ * If exhaustive is set to any other value, only the nonzero pattern of A is checked,
+ * thus we cannot gauranteee that the matrix is indeed fully symmetric as the values
+ * of the entries is not checked.
+ * 
+ * On success, 0 is returned. If the matrix is not symmetric, 1 is returned.
+ * 
+ */
+
+int IP_determine_symmetry
+(
+    SLIP_sparse* A,
+    int exhaustive
 );
 
 #endif
