@@ -7,7 +7,7 @@
 
 //------------------------------------------------------------------------------
 
-# include "SLIP_LU_internal.h"
+# include "../Include/IP-Chol.h"
 
 /*
  * Purpose: This function allocates a SLIP LU matrix of size n*m with array size
