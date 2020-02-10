@@ -11,7 +11,7 @@ LDLIBS += -lm -lgmp -lmpfr -lcolamd -lamd
 CS = ./SLIP_LU-master/SLIP_LU/Lib/libslip.a ./Lib/libipchol.a $(LDLIBS)
 
 
-all: lib SLIP_Chol Up_Chol SLIP_Chol_debug Up_Chol_debug
+all: lib SLIP_Chol Up_Chol SLIP_Chol_debug Up_Chol_debug 
 	- ./SLIP_Chol
 	- ./Up_Chol
 
@@ -29,6 +29,7 @@ Up_Chol_debug: lib Up_Chol.c Makefile
 	
 Up_Chol: lib Up_Chol.c Makefile
 	$(CC) $(LDFLAGS) $(CF) $(I) -o Up_Chol Up_Chol.c $(CS)
+
 
 #lu: lib SLIPLU.c demos.h demos.c Makefile
 #	$(CC) $(LDFLAGS) $(CF) $(I) -o SLIPLU SLIPLU.c demos.c $(CS)

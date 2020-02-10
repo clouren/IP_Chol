@@ -27,6 +27,18 @@
     SLIP_finalize();                    \
 }                                       \
 
+#define DEMO_OK(method)                 \
+{                                       \
+    ok = method ;                       \
+    if (ok != SLIP_OK)                  \
+    {                                   \
+        IP_determine_error(ok);         \
+        FREE_WORKSPACE ;                \
+        return 0 ;                      \
+    }                                   \
+}
+
+
 # include "./Include/IP-Chol.h"
 
 
@@ -39,12 +51,11 @@ int main( int argc, char* argv[] )
     //--------------------------------------------------------------------------
     SLIP_initialize();
     
-    
     //--------------------------------------------------------------------------
     // Declare memory & Process Command Line
     //--------------------------------------------------------------------------
-    int n=0, check, ok, j, index, k, nz = 0;
-    
+    int n = 0, check, ok, j, index, k, nz = 0;
+   
     SLIP_LU_analysis* S = NULL;
     mpz_t** b2 = NULL;
     mpz_t* rhos = NULL;
@@ -57,14 +68,15 @@ int main( int argc, char* argv[] )
     SLIP_sparse *L = SLIP_create_sparse();
     SLIP_dense *b = SLIP_create_dense();
     
+    // Default options. May be changed in SLIP_LU_config.h
     SLIP_options *option = SLIP_create_default_options();
     
     char* mat_name = "./ExampleMats/2.mat";// Set demo matrix and RHS name
     char* rhs_name = "./ExampleMats/2.mat.soln";
     int rat = 1;
-    // Default options. May be changed in SLIP_LU_config.h
+    
     // Process the command line
-    OK(IP_process_command_line(argc, argv, option,
+    DEMO_OK(IP_process_command_line(argc, argv, option,
         &mat_name, &rhs_name, &rat));
     
     //--------------------------------------------------------------------------
@@ -83,7 +95,7 @@ int main( int argc, char* argv[] )
     int32_t* I_in, *J_in;
     double* x_in;
   
-    OK(IP_tripread_double(A, mat_file, &I_in, &J_in, &x_in, &n, &nz, option));
+    DEMO_OK(IP_tripread_double(A, mat_file, &I_in, &J_in, &x_in, &n, &nz, option));
     //------------------------------------------------------------------
     // At this point, we have read in i, j, and x arrays and have 
     // allocated memory for the A matrix. The i & j are stored as 
@@ -91,10 +103,12 @@ int main( int argc, char* argv[] )
     // appropriate SLIP_build_* to construct our input matrix A
     //------------------------------------------------------------------
     fclose(mat_file);
-    OK(SLIP_build_sparse_trip_double(A, I_in, J_in, x_in, n, nz, option));
+    DEMO_OK(SLIP_build_sparse_trip_double(A, I_in, J_in, x_in, n, nz, option));
+    
     SLIP_FREE(I_in); SLIP_FREE(J_in); SLIP_FREE(x_in);
     A->n = n;
     
+    // For this code, we utilize a vector of all ones as the RHS vector    
     b2 = SLIP_create_mpz_mat(n,1);
     pinv = (int*) SLIP_malloc(n* sizeof(int));
     rhos = SLIP_create_mpz_array(n);
@@ -102,29 +116,39 @@ int main( int argc, char* argv[] )
     for (int k = 0; k < n; k++)
         OK(SLIP_mpz_set_ui(b2[k][0],1));
     
-    OK(SLIP_build_dense_mpz(b, b2, n, 1));
+    DEMO_OK(SLIP_build_dense_mpz(b, b2, n, 1));
     SLIP_delete_mpz_mat(&b2, n, 1);
     
     //--------------------------------------------------------------------------
-    // Perform Column ordering
+    // Perform Ordering of A
     //--------------------------------------------------------------------------
     clock_t start_col = clock();
     
-    //SLIP_col* S = (SLIP_col*) SLIP_malloc(1,sizeof(SLIP_col));
     S = SLIP_create_LU_analysis(n+1);
-    //S->q = (int*) SLIP_malloc(n+1, sizeof(int));
     
-    // Symmetric ordering of A 
-    //option->order = 2;  // No ordering
-     option->order = 1;  // AMD
-    //option->order = 0; // COLAMD
+    // Symmetric ordering of A. Uncomment the desired one, AMD is recommended
+    //option->order = SLIP_NO_ORDERING;  // No ordering
+    option->order = SLIP_AMD;  // AMD
+    //option->order = SLIP_COLAMD; // COLAMD
         
-    //ok = SLIP_LU_Symbolic(A, S, option, b, 1);
-    OK(SLIP_LU_analyze(S, A, option));
-    //if (ok != SLIP_OK) return 0;
-    //if (option->print == 1) SLIP_print_options(option);
+    DEMO_OK(SLIP_LU_analyze(S, A, option));
     
     clock_t end_col = clock();
+    
+    //--------------------------------------------------------------------------
+    // Determine if A is indeed symmetric. If so, we try Cholesky
+    // uncomment the one desired.
+    // --------------------------------------------------------------------------
+    
+    clock_t start_sym = clock();
+    
+    int test = 0;
+    //test = IP_determine_symmetry(A, 0);    // Determine symmetry just with nonzero pattern
+    test = IP_determine_symmetry(A, 1);    // Determine symmetry with nonzero pattern and values
+        
+    if (test == 1) return 0;
+    
+    clock_t end_sym = clock();
     
     //--------------------------------------------------------------------------
     // Permute matrix A, that is set A2 = PAP'
@@ -155,7 +179,7 @@ int main( int argc, char* argv[] )
     clock_t start_solve = clock();
     
     x = SLIP_create_mpq_mat(n, 1);
-    OK(IP_Solve(x, b->x, rhos, L, pinv2, option, 1));
+    DEMO_OK(IP_Solve(x, b->x, rhos, L, pinv2, option, 1));
     
     clock_t end_solve = clock();
     
@@ -163,7 +187,7 @@ int main( int argc, char* argv[] )
     // Soln verification
     //--------------------------------------------------------------------------
     // x = Q x
-    OK(SLIP_permute_x(x, n, 1, S));
+    DEMO_OK(SLIP_permute_x(x, n, 1, S));
     int checky = 1;
     if (checky == 1)
     {
@@ -200,13 +224,15 @@ int main( int argc, char* argv[] )
     // Output & Timing Stats
     //--------------------------------------------------------------------------
     
-    double t_sym = (double) (end_col-start_col)/CLOCKS_PER_SEC;
+    double t_col = (double) (end_col-start_col)/CLOCKS_PER_SEC;
+    double t_sym = (double) (end_sym-start_sym)/CLOCKS_PER_SEC;
     double t_factor = (double) (end_factor - start_factor) / CLOCKS_PER_SEC;
     double t_solve =  (double) (end_solve - start_solve) / CLOCKS_PER_SEC;
 
     printf("\nNumber of L nonzeros: \t\t\t%d",
         (L->nz) );
-    printf("\nSymbolic analysis time: \t\t%lf", t_sym);
+    printf("\nSymmetry Check time: \t\t\t%lf", t_sym);
+    printf("\nSymbolic analysis time: \t\t%lf", t_col);
     printf("\nLeft-Looking Chol Factorization time: \t%lf", t_factor);
     printf("\nFB Substitution time: \t\t\t%lf\n\n", t_solve);
 
