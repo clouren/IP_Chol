@@ -2,155 +2,171 @@
 // SLIP_LU/slip_forward_sub: sparse forward substitution (x = (LD)\x)
 //------------------------------------------------------------------------------
 
-// SLIP_LU: (c) 2019, Chris Lourenco, Jinhao Chen, Erick Moreno-Centeno,
+// SLIP_LU: (c) 2019-2020, Chris Lourenco, Jinhao Chen, Erick Moreno-Centeno,
 // Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
 // SLIP_LU/License for the license.
 
 //------------------------------------------------------------------------------
 
-/* Purpose: This function performs sparse REF forward substitution This is
- * essentially the same as the sparse REF triangular solve applied to each
- * column of the right hand side vectors. Like the normal one, this
- * function expects that the vector x is dense. As a result,the nonzero
- * pattern is not computed and each nonzero in x is iterated across.
- * The system to solve is LDx = x
+/* Purpose: This function performs sparse roundoff-error-free (REF) forward
+ * substitution This is essentially the same as the sparse REF triangular solve
+ * applied to each column of the right hand side vectors. Like the normal one,
+ * this function expects that the matrix x is dense. As a result,the nonzero
+ * pattern is not computed and each nonzero in x is iterated across.  The
+ * system to solve is L*D*x_output = x_input, overwriting the right-hand-side
+ * with the solution.
  *
- * On output, the mpz_t** x structure is modified
- *
+ * On output, the SLIP_matrix* x structure is modified.
  */
 
-#define SLIP_FREE_WORKSPACE            \
-{                                      \
-    for (i = 0; i < n; i++)            \
-    {                                  \
-        SLIP_FREE(h[i]);               \
-    }                                  \
-    SLIP_FREE(h);                      \
-}
+#define SLIP_FREE_ALL            \
+    SLIP_matrix_free(&h, NULL)  ;
 
-#include "SLIP_LU_internal.h"
+#include "slip_internal.h"
 
 SLIP_info slip_forward_sub
 (
-    SLIP_sparse *L,   // lower triangular matrix
-    mpz_t **x,        // right hand side matrix of size n*numRHS
-    mpz_t *rhos,      // sequence of pivots used in factorization
-    int32_t numRHS    // number of columns in x
+    const SLIP_matrix *L,   // lower triangular matrix
+    SLIP_matrix *x,         // right hand side matrix of size n*numRHS
+    const SLIP_matrix *rhos // sequence of pivots used in factorization
 )
 {
-    SLIP_info ok;
-    int32_t i, j, p, k, n, m, mnew, sgn, **h;
-    // Size of x vector
-    n = L->n;
 
-    // calloc is used, so that h is initialized for SLIP_FREE_WORKSPACE
-    h = (int32_t**) SLIP_calloc(n, sizeof(int32_t*));
-    if (!h)
+    //--------------------------------------------------------------------------
+    // check inputs
+    //--------------------------------------------------------------------------
+
+    SLIP_info info ;
+    SLIP_REQUIRE(L, SLIP_CSC, SLIP_MPZ);
+    SLIP_REQUIRE(x, SLIP_DENSE, SLIP_MPZ);
+    SLIP_REQUIRE(rhos, SLIP_DENSE, SLIP_MPZ);
+
+    //--------------------------------------------------------------------------
+
+    int64_t i, hx, k, j, jnew;
+    int sgn ;
+
+    // Build the history matrix
+    SLIP_matrix *h;
+    SLIP_CHECK (SLIP_matrix_allocate(&h, SLIP_DENSE, SLIP_INT64, x->m, x->n,
+        x->nzmax, false, true, NULL));
+
+    // initialize entries of history matrix to be -1
+    for (i = 0; i < x->nzmax; i++)
     {
-        return SLIP_OUT_OF_MEMORY;
+        h->x.int64[i] = -1;
     }
-    for (i = 0; i < n; i++)
-    {
-        h[i] = (int32_t*) SLIP_malloc(numRHS* sizeof(int32_t));
-        if (!h[i])
-        {
-            SLIP_FREE_WORKSPACE;
-            return SLIP_OUT_OF_MEMORY;
-        }
-        for (j = 0; j < numRHS; j++)
-        {
-            h[i][j] = -1;
-        }
-    }
+
 
     //--------------------------------------------------------------------------
     // Iterate across each RHS vector
     //--------------------------------------------------------------------------
 
-    for (k = 0; k < numRHS; k++)
+    for (k = 0; k < x->n; k++)
     {
+
         //----------------------------------------------------------------------
         // Iterate accross all nonzeros in x. Assume x is dense
         //----------------------------------------------------------------------
-        for (i = 0; i < n; i++)
+
+        for (i = 0; i < x->m; i++)
         {
-            p = h[i][k];
+            hx = SLIP_2D(h, i, k, int64);
             // If x[i][k] = 0, can skip operations and continue to next i
-            SLIP_CHECK(SLIP_mpz_sgn(&sgn, x[i][k]));
+            SLIP_CHECK(SLIP_mpz_sgn(&sgn, SLIP_2D(x, i, k, mpz)));
             if (sgn == 0) {continue;}
 
             //------------------------------------------------------------------
             // History Update
             //------------------------------------------------------------------
-            if (p < i-1)
+
+            if (hx < i-1)
             {
                 // x[i] = x[i] * rhos[i-1]
-                SLIP_CHECK(SLIP_mpz_mul(x[i][k], x[i][k], rhos[i-1]));
-                // x[i] = x[i] / rhos[p]
-                if (p > -1)
+                SLIP_CHECK(SLIP_mpz_mul( SLIP_2D(x, i, k, mpz),
+                                         SLIP_2D(x, i, k, mpz),
+                                         SLIP_1D(rhos, i-1, mpz)));
+                // x[i] = x[i] / rhos[hx]
+                if (hx > -1)
                 {
-                    SLIP_CHECK(SLIP_mpz_divexact(x[i][k], x[i][k], rhos[p]));
+                    SLIP_CHECK(SLIP_mpz_divexact( SLIP_2D(x, i, k, mpz),
+                                                  SLIP_2D(x, i, k, mpz),
+                                                  SLIP_1D(rhos, hx, mpz)));
                 }
             }
 
             //------------------------------------------------------------------
             // IPGE updates
             //------------------------------------------------------------------
-            // Access the Lmi
-            for (m = L->p[i]; m < L->p[i+1]; m++)
+
+            // Access the Lji
+            for (j = L->p[i]; j < L->p[i+1]; j++)
             {
-                // Location of Lmi
-                mnew = L->i[m];
-                // skip if Lx[m] is zero
-                SLIP_CHECK(SLIP_mpz_sgn(&sgn, L->x[m]));
+                // Location of Lji
+                jnew = L->i[j];
+
+                // skip if Lx[j] is zero
+                SLIP_CHECK(SLIP_mpz_sgn(&sgn, L->x.mpz[j]));
                 if (sgn == 0) {continue;}
-                // m > i
-                if (mnew > i)
+
+                // j > i
+                if (jnew > i)
                 {
-                    p = h[mnew][k];
-                    // x[mnew] is zero
-                    SLIP_CHECK(SLIP_mpz_sgn(&sgn, x[mnew][k]));
+                    // check if x[jnew] is zero
+                    SLIP_CHECK(SLIP_mpz_sgn(&sgn, SLIP_2D(x, jnew, k, mpz)));
                     if (sgn == 0)
                     {
-                        // x[m] = x[m] - lmi xi
-                        SLIP_CHECK(SLIP_mpz_submul(x[mnew][k], L->x[m],
-                            x[i][k]));
-                        // x[m] = x[m] / rhos[i-1]
+                        // x[j] = x[j] - lji xi
+                        SLIP_CHECK(SLIP_mpz_submul(SLIP_2D(x, jnew, k, mpz),
+                                                   SLIP_1D(L, j, mpz),
+                                                   SLIP_2D(x, i, k, mpz)));
+                        // x[j] = x[j] / rhos[i-1]
                         if (i > 0)
                         {
-                            SLIP_CHECK(SLIP_mpz_divexact(x[mnew][k],
-                                x[mnew][k], rhos[i - 1]));
+                            SLIP_CHECK(
+                                SLIP_mpz_divexact(SLIP_2D(x, jnew, k, mpz),
+                                                  SLIP_2D(x, jnew, k, mpz),
+                                                  SLIP_1D(rhos, i-1, mpz)));
                         }
                     }
                     else
                     {
+                        hx = SLIP_2D(h, jnew, k, int64);
                         // History update if necessary
-                        if (p < i-1)
+                        if (hx < i-1)
                         {
-                            // x[m] = x[m] * rhos[i-1]
-                            SLIP_CHECK(SLIP_mpz_mul(x[mnew][k], x[mnew][k],
-                                    rhos[i - 1]));
-                            // x[m] = x[m] / rhos[p]
-                            if (p > -1)
+                            // x[j] = x[j] * rhos[i-1]
+                            SLIP_CHECK(SLIP_mpz_mul(SLIP_2D(x, jnew, k, mpz),
+                                                    SLIP_2D(x, jnew, k, mpz),
+                                                    SLIP_1D(rhos, i-1, mpz)));
+                            // x[j] = x[j] / rhos[hx]
+                            if (hx > -1)
                             {
-                                SLIP_CHECK(SLIP_mpz_divexact(x[mnew][k],
-                                    x[mnew][k], rhos[p]));
+                                SLIP_CHECK(
+                                    SLIP_mpz_divexact(SLIP_2D(x, jnew, k, mpz),
+                                                      SLIP_2D(x, jnew, k, mpz),
+                                                      SLIP_1D(rhos, hx, mpz)));
                             }
                         }
-                        // x[m] = x[m] * rhos[i]
-                        SLIP_CHECK(SLIP_mpz_mul(x[mnew][k], x[mnew][k],
-                            rhos[i]));
-                        // x[m] = x[m] - lmi xi
-                        SLIP_CHECK(SLIP_mpz_submul(x[mnew][k], L->x[m],
-                            x[i][k]));
-                        // x[m] = x[m] / rhos[i-1]
+                        // x[j] = x[j] * rhos[i]
+                        SLIP_CHECK(SLIP_mpz_mul(SLIP_2D(x, jnew, k, mpz),
+                                                SLIP_2D(x, jnew, k, mpz),
+                                                SLIP_1D(rhos, i, mpz)));
+                        // x[j] = x[j] - lmi xi
+                        SLIP_CHECK(SLIP_mpz_submul(SLIP_2D(x, jnew, k, mpz),
+                                                   SLIP_1D(L, j, mpz),
+                                                   SLIP_2D(x, i, k, mpz)));
+                        // x[j] = x[j] / rhos[i-1]
                         if (i > 0)
                         {
-                            SLIP_CHECK(SLIP_mpz_divexact(x[mnew][k],
-                                x[mnew][k], rhos[i - 1]));
+                            SLIP_CHECK(
+                                SLIP_mpz_divexact(SLIP_2D(x, jnew, k, mpz),
+                                                  SLIP_2D(x, jnew, k, mpz),
+                                                  SLIP_1D(rhos, i-1, mpz)));
                         }
                     }
-                    h[mnew][k] = i;
+                    //h[jnew][k] = i;
+                    SLIP_2D(h, jnew, k, int64) = i;
                 }
             }
         }
@@ -159,7 +175,8 @@ SLIP_info slip_forward_sub
     //--------------------------------------------------------------------------
     // Free h memory
     //--------------------------------------------------------------------------
-    SLIP_FREE_WORKSPACE;
+
+    SLIP_FREE_ALL;
     return SLIP_OK;
 }
 

@@ -17,70 +17,81 @@
 
 SLIP_info IP_tripread_double
 (
-    SLIP_sparse* A,        // Matrix to be populated
-    FILE* file,          // file to read from (must already be open)
-    int32_t** i,
-    int32_t** j,
-    double** x,
-    int* n,
-    int* nz,
+    SLIP_matrix **A_handle,     // Matrix to be populated
+    FILE* file,                 // file to read from (must already be open)
     SLIP_options* option
 )
 {
-    int32_t m;
-    SLIP_info ok;
-    if (A == NULL || file == NULL)
+
+    SLIP_info info ;
+    if (A_handle == NULL || file == NULL)
     {
+        printf ("invalid input\n") ;
         return SLIP_INCORRECT_INPUT;
     }
+    (*A_handle) = NULL ;
+
     // Read in triplet form first
-    
+    int64_t m, n, nz;
+
     // Read in size of matrix & number of nonzeros
-    ok = fscanf(file, "%d %d %d\n", &m, n, nz);
-    
-    if (feof(file) || ok < 3)
+    int s = fscanf(file, "%"PRId64" %"PRId64" %"PRId64"\n", &m, &n, &nz);
+    if (feof(file) || s < 3)
     {
-        return SLIP_INCORRECT_INPUT;
-    }
-    
-    (*i) = (int32_t*) SLIP_malloc( (*nz) * sizeof(int32_t));
-    (*j) = (int32_t*) SLIP_malloc( (*nz)* sizeof(int32_t));
-    (*x) = (double*) SLIP_malloc( (*nz) * sizeof(double));
-
-    if (!i || !j || !x )
-    {
-        return SLIP_OUT_OF_MEMORY;
-    }
-
-    int32_t decrement;
-    ok = fscanf(file, "%d %d %lf\n", &( (*i) [0]), &( (*j) [0]), &( (*x) [0]));
-    if (feof(file) || ok < 3)
-    {
+        printf ("premature end-of-file\n") ;
         return SLIP_INCORRECT_INPUT;
     }
 
-    if (SLIP_MIN( (*i) [0], (*j) [0]) == 0)
+    // First, we create our A matrix which is triplet double
+    SLIP_matrix *A = NULL;
+    info = SLIP_matrix_allocate(&A, SLIP_TRIPLET, SLIP_FP64, m, n, nz,
+        false, true, option);
+    if (info != SLIP_OK)
     {
-        decrement = 0;
+        return (info) ;
     }
-    else
+
+    info = fscanf (file, "%"PRId64" %"PRId64" %lf\n",
+        &(A->i[0]), &(A->j[0]), &(A->x.fp64[0])) ;
+    if (feof(file) || info != SLIP_OK)
     {
-        decrement = 1;
-        (*i)[0]-=decrement;
-        (*j)[0]-=decrement;
+        printf ("premature end-of-file\n") ;
+        SLIP_matrix_free(&A, option);
+        return SLIP_INCORRECT_INPUT;
     }
+
+    // Matrices in this format are 1 based. We decrement
+    // the indices by 1 to use internally
+    A->i[0] -= 1;
+    A->j[0] -= 1;
 
     // Read in the values from file
-    for (int32_t k = 1; k < *nz; k++)
+    for (int64_t k = 1; k < nz; k++)
     {
-        ok = fscanf(file, "%d %d %lf\n", &( (*i) [k]), &( (*j) [k]), &( (*x) [k]));
-        if ((feof(file) && k != *nz-1) || ok < 3)
+        s = fscanf(file, "%"PRId64" %"PRId64" %lf\n",
+            &(A->i[k]), &(A->j[k]), &(A->x.fp64[k]));
+        if ((feof(file) && k != nz-1) || s < 3)
         {
+            printf ("premature end-of-file\n") ;
+            SLIP_matrix_free(&A, option);
             return SLIP_INCORRECT_INPUT;
         }
         // Conversion from 1 based to 0 based
-        (*i)[k] -= decrement;
-        (*j)[k] -= decrement;
+        A->i[k] -= 1;
+        A->j[k] -= 1;
     }
-    return SLIP_OK;
+
+    // the triplet matrix now has nz entries
+    A->nz = nz;
+
+    // At this point, A is a double triplet matrix. We make a copy of it with C
+
+    SLIP_matrix* C = NULL;
+    SLIP_matrix_copy(&C, SLIP_CSC, SLIP_MPZ, A, option);
+
+    // Success. Set A_handle = C and free A
+
+    SLIP_matrix_free(&A, option);
+    (*A_handle) = C;
+    return (info) ;
 }

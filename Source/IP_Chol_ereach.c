@@ -16,7 +16,7 @@
    
 int IP_Chol_ereach 
 (
-    SLIP_sparse *A,    // Matrix to be analyzed
+    SLIP_matrix *A,    // Matrix to be analyzed
     int k,          // Node to start at
     int* parent,    // ELimination Tree
     int* s,         // Contains the nonzero pattern in s[top..n-1]

@@ -1,8 +1,21 @@
-% This function installs the SLIP LU matlab routines. It allows the use of
-% m files SLIP_LU.m and SLIP_det.m
-% Please run this command prior to attempting to use any SLIP LU routines
+function SLIP_install
+%SLIP_INSTALL: install and test the MATLAB interface to SLIP_LU.
+%
+% This function installs the SLIP LU MATLAB routines. It allows the use of m
+% files SLIP_LU.m and SLIP_det.m.   Please run this command prior to attempting
+% to use any SLIP LU routines.
+%
 % Usage: SLIP_install
-% Required Libraries: GMP, MPFR, AMD, COLAMD
+%
+% Required Libraries: GMP, MPFR, AMD, COLAMD.  If -lamd and -lcolamd are not
+% available, install them with 'make install' first, in the top-level
+% SuiteSparse folder.
+%
+% See also SLIP_get_options, SLIP_LU, SLIP_test.
+
+% SLIP_LU: (c) 2019-2020, Chris Lourenco, Jinhao Chen, Erick Moreno-Centeno,
+% Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
+% SLIP_LU/License for the license.
 
 % Find all source files and add them to the src string
 src = '';
@@ -24,24 +37,33 @@ end
 % Compiler flags
 flags = 'CFLAGS=''-std=c99 -fPIC''';
 
-% External libraries
-libs = '-lgmp -lmpfr -lamd -lcolamd';
+% External libraries: GMP, MPRF, AMD, and COLAMD
+libs = '-L../../lib -lgmp -lmpfr -lamd -lcolamd -lsuitesparseconfig' ;
 
 % Path to headers
-includes = '-ISource/ -I../Source/ -I../Include/ ';
+includes = '-ISource/ -I../Source/ -I../Include/ -I../../SuiteSparse_config -I../../COLAMD/Include -I../../AMD/Include';
+
+% verbose = ' -v '
+verbose = '' ;
 
 % Generate the mex commands here
 % having -R2018a here for function mxGetDoubles
-m1 = ['mex -R2018a ', includes, ' SLIP_mex_soln.c ' , src, ' ', flags, ' ', libs];
-m2 = ['mex -R2018a ', includes, ' SLIP_mex_soln2.c ', src, ' ', flags, ' ', libs];
-m3 = ['mex -R2018a ', includes, ' SLIP_mex_soln3.c ', src, ' ', flags, ' ', libs];
+m1 = ['mex ', verbose, ' -R2018a ', includes, ' SLIP_mex_soln.c ' , src, ' ', flags, ' ', libs];
+
+if (~isempty (verbose))
+    fprintf ('%s\n', m1) ;
+end
 
 % Now, we evaluate each one
 eval(m1);
-eval(m2);
-eval(m3);
 
 fprintf('\nMex files installed, now we test\n')
 
 % Efficient testing
 SLIP_test;
+
+fprintf ('To use SLIP_LU in future MATLAB sessions, add the following\n') ;
+fprintf ('line to your startup.m file:\n') ;
+fprintf ('   addpath (''%s'') ;\n', pwd) ;
+fprintf ('Type ''doc startup'' for more info on how to use startup.m\n') ;
+

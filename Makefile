@@ -8,7 +8,7 @@ I = -I./Include -I./Source -I./SLIP_LU-master/SuiteSparse_config -I./SLIP_LU-mas
 # LDFLAGS = -L../../lib
 
 LDLIBS += -lm -lgmp -lmpfr -lcolamd -lamd
-CS = ./SLIP_LU-master/SLIP_LU/Lib/libslip.a ./Lib/libipchol.a $(LDLIBS)
+CS = ./SLIP_LU-master/SLIP_LU/Lib/libsliplu.a ./Lib/libipchol.a $(LDLIBS)
 
 
 all: lib SLIP_Chol Up_Chol SLIP_Chol_debug Up_Chol_debug 

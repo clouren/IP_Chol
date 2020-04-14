@@ -148,12 +148,6 @@
 #define IP_CHOL_VERSION_MINOR 0
 #define IP_CHOL_VERSION_SUB   0
 
-// Name of associated paper
-#define IP_PAPER "Exact Solution of Sparse Symmetric Positive Definite Linear Systems via Integer Preserving Cholesky Factorization"
-
-// Authors of code
-#define IP_AUTHOR "Christopher Lourenco, Erick Moreno-Centeno, Timothy Davis"
-
 // Note that IP-Chol inherits the same error and ordering codes as SLIP LU, thus they are omitted here
 
 // Free a pointer and set it to NULL.
@@ -280,6 +274,21 @@
 }                                       \
 
 //------------------------------------------------------------------------------
+// SLIP_matrix macros
+//------------------------------------------------------------------------------
+
+// These macros simplify the access to entries in a SLIP_matrix.
+// The type parameter is one of: mpq, mpz, mpfr, int64, or fp64.
+
+// To access the kth entry in a SLIP_matrix using 1D linear addressing,
+// in any matrix kind (CSC, triplet, or dense), in any type:
+#define SLIP_1D(A,k,type) ((A)->x.type [k])
+
+// To access the (i,j)th entry in a 2D SLIP_matrix, in any type:
+#define SLIP_2D(A,i,j,type) SLIP_1D (A, (i)+(j)*((A)->m), type)
+
+
+//------------------------------------------------------------------------------
 // Sym_chol is the data structure for symbolic analysis in the IP-Cholesky 
 // factorizations. It includes row permutation, elimination tree, and column
 // pointers.
@@ -300,30 +309,20 @@ void IP_Sym_chol_free
     Sym_chol* S
 );
    
-/* Purpose: This function obtains A(1:k-1,k) and stores it in a
- * dense vector x
- */
-SLIP_info IP_Up_get_column  
-(
-    SLIP_sparse* A,    // input matrix
-    int k,          // column to extract
-    mpz_t* x        // A(1:k-1,k)
-);
-
 /* Purpose: Permute the matrix A and return A2 = PAP */
-SLIP_sparse* IP_Chol_permute_A
+SLIP_info IP_Chol_permute_A
 (
-    SLIP_sparse* A,        // Initial input matrix
-    int* pinv,          // Row permutation
-    SLIP_LU_analysis* S         // Column permutation
+    SLIP_matrix **A2_handle // Output permuted matrix
+    SLIP_matrix* A,        // Initial input matrix
+    int* pinv,             // Row permutation
+    SLIP_LU_analysis* S    // Column permutation
 );
-
 
 /* Purpose: Compute the elimination tree of A */
 
 int* IP_Chol_etree 
 (
-    SLIP_sparse* A // Input matrix (must be SPD)
+    SLIP_matrix* A // Input matrix (must be SPD)
 );
 
 /* Purpose: This function computes the reach of the kth row of A onto the graph of L using the 
@@ -333,7 +332,7 @@ int* IP_Chol_etree
    
 int IP_Chol_ereach 
 (
-    SLIP_sparse *A,    // Matrix to be analyzed
+    SLIP_matrix *A,    // Matrix to be analyzed
     int k,          // Node to start at
     int* parent,    // ELimination Tree
     int* s,         // Contains the nonzero pattern in s[top..n-1]
@@ -373,11 +372,10 @@ int IP_Chol_leaf
     int* jleaf
 );
 
-
 /* Purpose: Something*/
 static void init_ata 
 (
-    SLIP_sparse *AT, 
+    SLIP_matrix *AT, 
     int* post, 
     int *w, 
     int **head, 
@@ -387,7 +385,7 @@ static void init_ata
 /* Purpose: Something*/
 int *IP_Chol_counts 
 (
-    SLIP_sparse *A, 
+    SLIP_matrix *A, 
     int *parent, 
     int *post, 
     int ata // Parameter if we are doing A or A^T A. Setit as 0
@@ -397,18 +395,42 @@ int *IP_Chol_counts
  * Cholesky factorization. i.e., 
  * (LD) x = A(1:k-1,k). 
  */
-int IP_Up_Chol_triangular_solve // performs the sparse REF triangular solve
+SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solve
 (
-    SLIP_sparse* L,              // partial L matrix
-    SLIP_sparse* A,              // input matrix
+    int64_t *top_output,        // Output the beginning of nonzero pattern
+    SLIP_matrix* L,              // partial L matrix
+    SLIP_matrix* A,              // input matrix
     int k,                    // iteration of algorithm
     int* xi,                  // nonzero pattern vector
     int* parent,              // Elimination tree
     int* c,                   // Column pointers
-    mpz_t* rhos,              // sequence of pivots
+    SLIP_matrix* rhos,              // sequence of pivots
     int* h,                   // history vector
-    mpz_t* x                  // solution of system ==> kth column of L and U
+    SLIP_matrix* x                  // solution of system ==> kth column of L and U
 );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* Purpose: This function performs the SLIP Cholesky factorization. This factorization
  * is done via n iterations of the sparse REF triangular solve function. The

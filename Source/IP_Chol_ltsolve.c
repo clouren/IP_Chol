@@ -15,9 +15,8 @@ return SLIP_OUT_OF_MEMORY;      \
 /* Purpose: This solves the system L'x = b for Cholesky factorization */
 int IP_Chol_ltsolve 
 (
-    SLIP_sparse *L,    // The lower triangular matrix
-    mpz_t **x,      // Solution vector
-    int numRHS      // Number of RHS vectors
+    SLIP_matrix *L,    // The lower triangular matrix
+    SLIP_matrix *x      // Solution vector
 )
 {
     SLIP_info ok;
@@ -27,12 +26,14 @@ int IP_Chol_ltsolve
     {
         for (j = n-1; j >= 0; j--)
         {
-            if (mpz_sgn(x[j][k]) == 0) continue;
+            if ( mpz_sgn ( SLIP_2D(x, i,j, mpz)) == 0) continue;
+            
             for (p = L->p[j]+1; p < L->p[j+1]; p++)
             {
-                OK(SLIP_mpz_submul(x[j][k], L->x[p], x[L->i[p]][k]));
+                OK ( SLIP_mpz_submul( SLIP_2D(x, j, k, mpz), L->x[p], 
+                                      SLIP_2D( x, L->i[p], k, mpz)));
             }
-            OK(SLIP_mpz_divexact( x[j][k], x[j][k], L->x[L->p[j]]));
+            OK( SLIP_mpz_divexact( SLIP_2D(x, j, k, mpz), SLIP_2D(x, j, k, mpz), L->x[ L->p[j]]));
         }
     }
     return SLIP_OK;

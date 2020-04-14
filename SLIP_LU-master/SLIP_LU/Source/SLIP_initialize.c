@@ -1,24 +1,20 @@
 //------------------------------------------------------------------------------
-// SLIP_LU/SLIP_initialize: intialize SLIP_LU
+// SLIP_LU/SLIP_initialize: initialize SLIP_LU
 //------------------------------------------------------------------------------
 
-// SLIP_LU: (c) 2019, Chris Lourenco, Jinhao Chen, Erick Moreno-Centeno,
+// SLIP_LU: (c) 2019-2020, Chris Lourenco, Jinhao Chen, Erick Moreno-Centeno,
 // Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
 // SLIP_LU/License for the license.
 
 //------------------------------------------------------------------------------
 
-# include "SLIP_LU_internal.h"
+// SLIP_initialize initializes the working evironment for SLIP_LU.
 
-/* 
- * Purpose: This function initializes the working evironment for SLIP_LU
- */
-void SLIP_initialize( void )
+#include "slip_internal.h"
+
+void SLIP_initialize ( void )
 {
-    //--------------------------------------------------------------------------
-    // Set GMP memory functions as default SLIP gmp functions
-    //--------------------------------------------------------------------------
-
-    SLIP_initialize_expert(NULL, NULL, NULL);
+    mp_set_memory_functions (slip_gmp_allocate, slip_gmp_reallocate,
+        slip_gmp_free) ;
 }
 

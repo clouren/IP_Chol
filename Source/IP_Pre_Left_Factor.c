@@ -14,8 +14,8 @@
  */
 int IP_Pre_Left_Factor         // performs the Up looking Cholesky factorization
 (
-    SLIP_sparse* A,
-    SLIP_sparse* L,              // partial L matrix
+    SLIP_matrix* A,
+    SLIP_matrix* L,              // partial L matrix
     int* xi,                  // nonzero pattern vector
     int* parent,              // Elimination tree
     Sym_chol * S,           // stores guess on nnz and column permutation
@@ -33,7 +33,7 @@ int IP_Pre_Left_Factor         // performs the Up looking Cholesky factorization
     //--------------------------------------------------------------------------
        
     // Allocate L  
-    OK(IP_sparse_alloc2(L, n, n, S->lnz));
+    SLIP_matrix_allocate(&L, SLIP_CSC, SLIP_MPZ, n, n, S->lnz, false, false, option);
     for (k = 0; k < n; k++) L->p[k] = c[k] = S->cp[k];
         
     L->i[0] = 0;

@@ -2,25 +2,21 @@
 // SLIP_LU/SLIP_free: wrapper for free
 //------------------------------------------------------------------------------
 
-// SLIP_LU: (c) 2019, Chris Lourenco, Jinhao Chen, Erick Moreno-Centeno,
+// SLIP_LU: (c) 2019-2020, Chris Lourenco, Jinhao Chen, Erick Moreno-Centeno,
 // Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
 // SLIP_LU/License for the license.
 
 //------------------------------------------------------------------------------
 
-#include "SLIP_LU_internal.h"
+// Free the memory allocated by SLIP_calloc, SLIP_malloc, or SLIP_realloc.
 
-/* Purpose: Free the memory associated with the pointer x
- */
+#include "slip_internal.h"
 
 void SLIP_free
 (
-    void* p         // Pointer to be free'd
+    void *p         // pointer to memory space to free
 )
 {
-    if (p)
-    {
-        SLIP_MEMORY_FREE (p) ;
-    }
+    SuiteSparse_free (p) ;
 }
 

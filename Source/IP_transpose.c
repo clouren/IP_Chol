@@ -13,17 +13,17 @@
 #include "../Include/IP-Chol.h"
     
 /* Purpose: This function sets C = A' */
-SLIP_sparse* IP_transpose
+SLIP_matrix* IP_transpose
 (
-    SLIP_sparse *A     // Matrix to be transposed
+    SLIP_matrix *A     // Matrix to be transposed
 )
 {
     //SLIP_mat* C = (SLIP_mat*) SLIP_malloc(1, sizeof(SLIP_mat));
     //SLIP_mat_alloc (A->n, A->m, A->nz, C);
     SLIP_info ok;
     int* w = NULL;
-    SLIP_sparse* C = SLIP_create_sparse();
-    OK(IP_sparse_alloc(C, A->n, A->m, A->nz));
+    SLIP_matrix* C = NULL;
+    SLIP_matrix_allocate(&C, SLIP_CSC, SLIP_MPZ, A->n, A->m, A->nz, false, true, option);
     int p, q, j, n, m;
     m = A->m ; n = A->n ; 
     w = (int*) SLIP_malloc(m* sizeof(int));
@@ -36,7 +36,7 @@ SLIP_sparse* IP_transpose
         {
             q = w [A->i [p]]++;
             C->i [q] = j ;                 /* place A(i,j) as entry C(j,i) */
-            OK(SLIP_mpz_set(C->x[q], A->x[p]));
+            OK(SLIP_mpz_set(C->x.mpz[q], A->x.mpz[p]));
         }
     }
     C->nz = A->nz; 

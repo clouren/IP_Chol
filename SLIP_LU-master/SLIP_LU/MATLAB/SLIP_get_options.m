@@ -1,30 +1,46 @@
-function x = SLIP_get_options()
-% This function defines various parameters for the SLIP LU factorization. It sets
-% each parameter to its default value.
-% 
-% USAGE: option = SLIP_get_options;
+function option = SLIP_get_options
+%SLIP_GET_OPTIONS: set defaults for SLIP_LU factorization.
+%
+% Usage:
+%
+%   option = SLIP_get_options ;
+%   option.tol = 1e-6 ;
+%   x = SLIP_LU (A, b, option) ;
 %
 % Each element of the option struct has the following possible values:
-% option.column: Column ordering used. 
-%        0: None: Not recommended for sparse matrices
-%        1: COLAMD: Default
+% option.order: Column ordering used.
+%        0: None: not recommended unless you know the matrix already has a
+%           good column ordering.
+%        1: COLAMD (the default ordering)
 %        2: AMD
 %
-% option.pivot: Pivoting scheme used.
+% option.pivot: Row pivoting scheme used.
 %        0: Smallest pivot
 %        1: Diagonal pivoting
 %        2: First nonzero per column chosen as pivot
-%        3: Diagonal pivoting with tolerance for smallest pivot, Default
+%        3: Diagonal pivoting with tolerance for smallest pivot (default)
 %        4: Diagonal pivoting with tolerance for largest pivot
 %        5: Largest pivot
-% 
-% option.int: Set equal to 1 if input mat is already integral
-% option.intb: set equal to 1 if input RHS vector(s) are already integral
-% option.tol: tolerance (0,1) which is used if some threshold pivoting is used
+%
+% option.tol: tolerance (0,1) which is used if some threshold pivoting is used.
+%       default is 0.1.
+%
+% If a field is not present in the options struct, or if the options
+% struct is not passed to SLIP_LU, the defaults are used.
+%
+% See also SLIP_LU, SLIP_install, SLIP_test.
 
-x.column = 1;
-x.pivot = 3;
-x.int = 0;
-x.intb = 0;
-x.tol = 0.1;
-end
+% SLIP_LU: (c) 2019-2020, Chris Lourenco, Jinhao Chen, Erick Moreno-Centeno,
+% Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
+% SLIP_LU/License for the license.
+
+option.order = 1 ;               % type of column ordering used
+option.pivot = 3 ;               % type of row pivoting scheme
+option.tol = 0.1 ;               % tolerance for row pivoting scheme
+
+% TODO: delete this function; not needed
+
+% TODO: use strings, not integers for:
+% option.order = 'none', 'colamd', or 'amd'
+% option.pivot = 'smallest' , etc
+

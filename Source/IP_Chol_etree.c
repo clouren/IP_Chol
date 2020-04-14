@@ -14,7 +14,7 @@
 
 int* IP_Chol_etree 
 (
-    SLIP_sparse* A // Input matrix (must be SPD)
+    SLIP_matrix* A // Input matrix (must be SPD)
 )
 {
     int i, k, p, m, n, inext, *w, *parent, *ancestor, *prev ;

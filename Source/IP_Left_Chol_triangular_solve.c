@@ -20,14 +20,14 @@ static inline int32_t compare4 (const void * a, const void * b)
  */
 int IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
 (
-    SLIP_sparse* L,              // partial L matrix
-    SLIP_sparse* A,              // input matrix
+    SLIP_matrix* L,              // partial L matrix
+    SLIP_matrix* A,              // input matrix
     int k,                    // iteration of algorithm
     int* xi,                  // nonzero pattern vector
-    mpz_t* rhos,              // sequence of pivots
+    SLIP_matrix* rhos,              // sequence of pivots
     int* pinv,                // inverse row permutation
     int* h,                   // history vector
-    mpz_t* x,                  // solution of system ==> kth column of L and U
+    SLIP_matrix* x,                  // solution of system ==> kth column of L and U
     int* parent,
     int* c
 )
@@ -58,6 +58,7 @@ int IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
     }
     
     // Reset the array
+    // TODO Delete me?
     OK(IP_reset_mpz_array(x, n, top, xi));
     
     // Now we obtain the values of the first k-1 entries of x
@@ -66,17 +67,18 @@ int IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
         m = xi[i];
         p = c[m]++;
         p+=1;
-        mpz_set(x[m], L->x[p]);
+        mpz_set(x->x.mpz[m], L->x.mpz[p]);
     }
 
     for (i = A->p[k]; i < A->p[k+1]; i++)
     {
         if ( A->i[i] >= k)
         {
-            OK(SLIP_mpz_set(x[A->i[i]], A->x[i]));
+            OK(SLIP_mpz_set(x->x.mpz[A->i[i]], A->x.mpz[i]));
         }
     }
     qsort(&xi[top], n-top, sizeof(int32_t), compare4);
+    //TODO keep me?
     OK(IP_reset_int_array2(h,n,top,xi));      // Reset h[i] = -1 for all i in nonzero pattern
         
     //--------------------------------------------------------------------------
@@ -86,7 +88,7 @@ int IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
     {   
         /* Finalize x[j] */
         j = xi[p];                        // First nonzero term
-        if (mpz_sgn(x[j]) == 0) continue;// If x[j] == 0 no work must be done
+        if (mpz_sgn(x->x.mpz[j]) == 0) continue;// If x[j] == 0 no work must be done
         if (j < k)                    // jnew < k implies entries in U
         {
             //------------------------------------------------------------------
@@ -99,26 +101,26 @@ int IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
                 if (i > j && i >= k)
                 {
                     /*************** If lij==0 then no update******************/
-                    if (mpz_sgn(L->x[m]) == 0) continue;
+                    if (mpz_sgn(L->x.mpz[m]) == 0) continue;
 
                     //----------------------------------------------------------
                     /************* lij is nonzero, x[i] is zero****************/
                     // x[i] = 0 then only perform IPGE update subtraction/division
                     //----------------------------------------------------------
-                    if (mpz_sgn(x[i]) == 0)
+                    if (mpz_sgn(x->x.mpz[i]) == 0)
                     {
                         // No previous pivot
                         if (j < 1)
                         {
-                            OK(SLIP_mpz_submul(x[i],L->x[m],x[j]));// x[i] = 0 - lij*x[j]
+                            OK(SLIP_mpz_submul(x->x.mpz[i],L->x.mpz[m],x->x.mpz[j]));// x[i] = 0 - lij*x[j]
                             h[i] = j;                  // Entry is up to date
                         }
                         
                         // Previous pivot exists
                         else
                         {
-                            OK(SLIP_mpz_submul(x[i],L->x[m],x[j]));// x[i] = 0 - lij*x[j]
-                            OK(SLIP_mpz_divexact(x[i],x[i],rhos[j-1]));// x[i] = x[i] / rho[j-1]
+                            OK(SLIP_mpz_submul(x->x.mpz[i],L->x.mpz[m],x->x.mpz[j]));// x[i] = 0 - lij*x[j]
+                            OK(SLIP_mpz_divexact(x->x.mpz[i],x->x.mpz[i],rhos->x.mpz[j-1]));// x[i] = x[i] / rho[j-1]
                             h[i] = j;                  // Entry is up to date
                         }
                     }
@@ -132,8 +134,8 @@ int IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
                         // No previous pivot in this case
                         if (j < 1)
                         {
-                            OK(SLIP_mpz_mul(x[i],x[i],rhos[0]));      // x[i] = x[i]*rho[0]
-                            OK(SLIP_mpz_submul(x[i], L->x[m], x[j]));// x[i] = x[i] - lij*xj
+                            OK(SLIP_mpz_mul(x->x.mpz[i],x->x.mpz[i],rhos->x.mpz[0]));      // x[i] = x[i]*rho[0]
+                            OK(SLIP_mpz_submul(x->x.mpz[i], L->x.mpz[m], x->x.mpz[j]));// x[i] = x[i] - lij*xj
                             h[i] = j;                  // Entry is now up to date
                         }
                         // There is a previous pivot
@@ -142,15 +144,15 @@ int IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
                             // History update if necessary
                             if (h[i] < j - 1)
                             {
-                                OK(SLIP_mpz_mul(x[i],x[i],rhos[j-1]));// x[i] = x[i] * rho[j-1]
+                                OK(SLIP_mpz_mul(x->x.mpz[i],x->x.mpz[i],rhos->x.mpz[j-1]));// x[i] = x[i] * rho[j-1]
                                 if (h[i] > -1)
                                 {
-                                    OK(SLIP_mpz_divexact(x[i],x[i],rhos[h[i]]));// x[i] = x[i] / rho[h[i]]
+                                    OK(SLIP_mpz_divexact(x->x.mpz[i],x->x.mpz[i],rhos->x.mpz[h[i]]));// x[i] = x[i] / rho[h[i]]
                                 }
                             }
-                            OK(SLIP_mpz_mul(x[i],x[i],rhos[j]));// x[i] = x[i] * rho[j]
-                            OK(SLIP_mpz_submul(x[i], L->x[m], x[j]));// x[i] = x[i] - lij*xj
-                            OK(SLIP_mpz_divexact(x[i],x[i],rhos[j-1]));// x[i] = x[i] / rho[j-1] 
+                            OK(SLIP_mpz_mul(x->x.mpz[i],x->x.mpz[i],rhos->x.mpz[j]));// x[i] = x[i] * rho[j]
+                            OK(SLIP_mpz_submul(x->x.mpz[i], L->x.mpz[m], x->x.mpz[j]));// x[i] = x[i] - lij*xj
+                            OK(SLIP_mpz_divexact(x->x.mpz[i],x->x.mpz[i],rhos->x.mpz[j-1]));// x[i] = x[i] / rho[j-1] 
                             h[i] = j;                  // Entry is up to date
                         }
                     }
@@ -164,10 +166,10 @@ int IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
             //------------------------------------------------------------------
             if (h[j] < k-1)
             {
-                OK(SLIP_mpz_mul(x[j],x[j],rhos[k-1]));           // x[j] = x[j] * rho[k-1]
+                OK(SLIP_mpz_mul(x->x.mpz[j],x->x.mpz[j],rhos->x.mpz[k-1]));           // x[j] = x[j] * rho[k-1]
                 if (h[j] > -1)
                 {
-                    OK(SLIP_mpz_divexact(x[j],x[j],rhos[h[j]]));// x[j] = x[j] / rho[h[j]]
+                    OK(SLIP_mpz_divexact(x->x.mpz[j],x->x.mpz[j],rhos->x.mpz[h[j]]));// x[j] = x[j] / rho[h[j]]
                 }
             }
         }

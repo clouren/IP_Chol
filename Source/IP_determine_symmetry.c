@@ -25,7 +25,7 @@
 
 int IP_determine_symmetry
 (
-    SLIP_sparse* A,
+    SLIP_matrix* A,
     int exhaustive
 )
 {

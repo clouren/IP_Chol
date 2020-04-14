@@ -10,20 +10,20 @@
 #include "../Include/IP-Chol.h"
 
 /* Purpose: Permute the matrix A and return A2 = PAP */
-SLIP_sparse* IP_Chol_permute_A
+SLIP_info IP_Chol_permute_A
 (
-    SLIP_sparse* A,        // Initial input matrix
-    int* pinv,          // Row permutation
-    SLIP_LU_analysis* S         // Column permutation
+    SLIP_matrix **A2_handle // Output permuted matrix
+    SLIP_matrix* A,        // Initial input matrix
+    int* pinv,             // Row permutation
+    SLIP_LU_analysis* S    // Column permutation
 )
 {
     SLIP_info ok;
     int nz = 0, j, n = A->n;
-    SLIP_sparse* A2 = SLIP_create_sparse();
-    OK(IP_sparse_alloc(A2, n, n, A->nz));
-    if (ok != SLIP_OK)
-        return NULL;
-    OK(SLIP_mpq_set_ui(A2->scale, 1, 1));
+    SLIP_matrix* A2 = NULL;
+    SLIP_matrix_allocate(&A2, SLIP_CSC, SLIP_MPZ, n, n, A->nz, false, true, option);
+
+    OK(SLIP_mpq_set(A2->scale, A->scale));
     if (ok != SLIP_OK)
         return NULL;
     for (int k = 0 ; k < n ; k++)
@@ -32,11 +32,11 @@ SLIP_sparse* IP_Chol_permute_A
         j = S->q [k];
         for (int t = A->p [j] ; t < A->p [j+1] ; t++)
         {
-            OK(SLIP_mpz_set(A2->x[nz], A->x[t]));  // row i of A is row pinv[i] of C 
+            OK(SLIP_mpz_set(A2->x.mpz[nz], A->x.mpz[t]));  // row i of A is row pinv[i] of C 
             A2->i [nz++] = pinv [A->i [t]];
         }
     }
     A2->p [n] = nz ;                       // finalize the last column of C 
-    A2->nz = A2->nzmax;
-    return A2;
+    (*A_handle) = A2;
+    return SLIP_OK;
 }

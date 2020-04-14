@@ -1,6 +1,19 @@
+//------------------------------------------------------------------------------
+// SLIP_LU/Demo/example2.c: example main program for SLIP_LU
+//------------------------------------------------------------------------------
+
+// SLIP_LU: (c) 2019-2020, Chris Lourenco, Jinhao Chen, Erick Moreno-Centeno,
+// Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
+// SLIP_LU/License for the license.
+
+//------------------------------------------------------------------------------
+
 #include "demos.h"
-// This example shows how to use SLIP LU within your code and read in a matrix
-// stored in MM format. Also shows how to use SLIP with an mpq output
+
+// This example shows how to use SLIP LU within your code 
+// Unlike example1, the input matrix here is directly read in from the 
+// triplet formmat. Also, differs from example1 in that the output solution
+// is given in mpq_t precision
 
 // usage:
 // example2 mat_file rhs_file > out
@@ -10,25 +23,21 @@
 // ../ExampleMats/10teams.mat and ../ExampleMats/10teams.v, respectively.
 // out is file for output calculated result
 
-
-#define FREE_WORKSPACE                  \
-    SLIP_delete_LU_analysis(&S);        \
-    SLIP_delete_sparse(&A);             \
-    SLIP_FREE(option);                  \
-    SLIP_delete_dense(&b);              \
-    SLIP_delete_mpq_mat(&x, n, numRHS); \
+#define FREE_WORKSPACE              \
+    SLIP_LU_analysis_free(&S, option);\
+    SLIP_matrix_free(&A, option);   \
+    SLIP_FREE(option);              \
+    SLIP_matrix_free(&b, option);   \
+    SLIP_matrix_free(&x, option);   \
     SLIP_finalize();
-
 
 int main (int argc, char **argv)
 {
     //--------------------------------------------------------------------------
-    // Prior to using SLIP LU, its environment must be initialized. This is done
-    // by calling the SLIP_initialize() function. 
+    // Prior to using SLIP LU, its environment must be initialized. This is
+    // done by calling the SLIP_initialize() function.
     //--------------------------------------------------------------------------
     SLIP_initialize();
-    SLIP_info ok;
-    int n = 0, numRHS = 0;
 
     //--------------------------------------------------------------------------
     // Get matrix and right hand side file names
@@ -45,12 +54,13 @@ int main (int argc, char **argv)
     //--------------------------------------------------------------------------
     // Declare our data structures
     //--------------------------------------------------------------------------
-    mpq_t** x = NULL;
-    SLIP_sparse *A = SLIP_create_sparse();
-    SLIP_dense *b = SLIP_create_dense();
-    SLIP_options* option = SLIP_create_default_options();
-    SLIP_LU_analysis* S = NULL;
-    if (!A || !b || !option)
+    SLIP_info ok;
+    SLIP_matrix *A = NULL ;                     // input matrix
+    SLIP_matrix *b = NULL ;                     // Right hand side vector
+    SLIP_matrix *x = NULL ;                     // Solution vectors
+    SLIP_LU_analysis *S = NULL ;                // Column permutation
+    SLIP_options *option = SLIP_create_default_options();
+    if (option == NULL)
     {
         fprintf (stderr, "Error! OUT of MEMORY!\n");
         FREE_WORKSPACE;
@@ -60,7 +70,9 @@ int main (int argc, char **argv)
     //--------------------------------------------------------------------------
     // Allocate memory, read in A and b
     //--------------------------------------------------------------------------
-    // Read in A
+
+    // Read in A. The output of this demo function is A in CSC format with
+    // mpz_t entries.
     FILE* mat_file = fopen(mat_name,"r");
     if( mat_file == NULL )
     {
@@ -68,10 +80,11 @@ int main (int argc, char **argv)
         FREE_WORKSPACE;
         return 0;
     }
-    OK(SLIP_tripread(A, mat_file));
+    OK(SLIP_tripread(&A, mat_file, option));
     fclose(mat_file);
 
-    // Read in right hand side
+    // Read in b. The output of this demo function is b in dense format with
+    // mpz_t entries
     FILE* rhs_file = fopen(rhs_name,"r");
     if( rhs_file == NULL )
     {
@@ -79,58 +92,44 @@ int main (int argc, char **argv)
         FREE_WORKSPACE;
         return 0;
     }
-    OK(SLIP_read_dense(b, rhs_file));
+    OK(SLIP_read_dense(&b, rhs_file, option));
     fclose(rhs_file);
 
     // Check if the size of A matches b
-    if (A->m != b->m)
+    if (A->n != b->m)
     {
-        printf("%d %d \n", A->m,b->m);
+        printf("%"PRId64" %"PRId64" \n", A->m,b->m);
         fprintf (stderr, "Error! Size of A and b do not match!\n");
         FREE_WORKSPACE;
         return 0;
     }
-    n = A->m;                                             // Set n
-    numRHS = b->n;
-    S = SLIP_create_LU_analysis(n+1);
-    x = SLIP_create_mpq_mat(n,numRHS);
-    if (!S || !x)
-    {
-        fprintf (stderr, "Error! OUT of MEMORY!\n");
-        FREE_WORKSPACE;
-        return 0;
-    }
 
     //--------------------------------------------------------------------------
-    // Symbolic Ordering and Factorization
+    // solve
     //--------------------------------------------------------------------------
 
-    clock_t start_sym = clock();
+    clock_t start_s = clock();
+    
+    // SLIP LU has an optional check, to enable it, one can set the following
+    // parameter to be true.
+    option->check = true;
+   
+    // Solve the system and give MPQ solution
+    OK(SLIP_backslash( &x, SLIP_MPQ, A, b, option));
+    
+    clock_t end_s = clock();
 
-    // Symbolic analysis to obtain column permutation
-    OK(SLIP_LU_analyze(S, A, option));
+    double t_s = (double) (end_s - start_s) / CLOCKS_PER_SEC;
 
-    clock_t end_sym = clock();
-
-    clock_t start_f = clock();
-
-    // Solve the linear system using SLIP LU. The keyword mpq below indicates
-    // that the final solution vector x will be given as a mpq_t**
-    OK(SLIP_solve_mpq(x, A, S, b, option));
-
-    clock_t end_f = clock();
-
-    double t_s = (double) (end_sym - start_sym) / CLOCKS_PER_SEC;
-    double t_f = (double) (end_f - start_f) / CLOCKS_PER_SEC;
-
-    printf ("\nSymbolic Analysis Time: %lf", t_s);
-    printf ("\nSLIP LU Factor & Solve time: %lf\n", t_f);
+    printf("\nSLIP LU Factor & Solve time: %lf\n", t_s);
 
     //--------------------------------------------------------------------------
     // Free memory
     //--------------------------------------------------------------------------
+
     FREE_WORKSPACE;
 
     printf ("\n%s: all tests passed\n\n", __FILE__) ;
     return 0;
 }
+

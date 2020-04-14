@@ -1,5 +1,15 @@
-#ifndef SLIP_Include
-#define SLIP_Include
+//------------------------------------------------------------------------------
+// SLIP_LU/Include/SLIP_LU.h: user #include file for SLIP_LU.
+//------------------------------------------------------------------------------
+
+// SLIP_LU: (c) 2019-2020, Chris Lourenco, Jinhao Chen, Erick Moreno-Centeno,
+// Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
+// SLIP_LU/License for the license.
+
+//------------------------------------------------------------------------------
+
+#ifndef SLIP_LU_H
+#define SLIP_LU_H
 
 // This software package exactly solves a sparse system of linear equations
 // using the SLIP LU factorization. This code accompanies the paper (submitted
@@ -102,8 +112,9 @@
 
 //    The factors L and U are computed via integer preserving operations via
 //    integer-preserving Gaussian elimination. The key part of this algorithm
-//    is a REF Sparse triangular solve function which exploits sparsity to
-//    reduce the number of operations that must be performed.
+//    is a Round-off Error Free (REF) sparse triangular solve function which
+//    exploits sparsity to reduce the number of operations that must be
+//    performed.
 
 //    Once L and U are computed, a simplified version of the triangular solve
 //    is performed which assumes the vector b is dense. The final solution
@@ -119,24 +130,21 @@
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-//-------------------------External header files--------------------------------
+//---------------------Include files required by SLIP LU------------------------
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <gmp.h>
 #include <mpfr.h>
+#include "SuiteSparse_config.h"
 
 //------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-//-------------------------Default Parameters-----------------------------------
-//------------------------------------------------------------------------------
+// Version
 //------------------------------------------------------------------------------
 
 // Current version of the code
@@ -144,12 +152,6 @@
 #define SLIP_LU_VERSION_MAJOR 1
 #define SLIP_LU_VERSION_MINOR 0
 #define SLIP_LU_VERSION_SUB   0
-
-// Name of associated paper
-#define SLIP_PAPER "Algorithm 1xxx: SLIP LU: Sparse Left-looking Integer-Preserving LU Factorization"
-
-// Authors of code
-#define SLIP_AUTHOR "Christopher Lourenco, Jinhao Chen, Erick Moreno-Centeno, Timothy Davis"
 
 //------------------------------------------------------------------------------
 // Error codes
@@ -161,11 +163,13 @@
 
 typedef enum
 {
-    SLIP_OK = 0,                    // all is well
-    SLIP_OUT_OF_MEMORY = -1,        // out of memory
-    SLIP_SINGULAR = -2,             // the input matrix A is singular
-    SLIP_INCORRECT_INPUT = -3,      // one or more input arguments are incorrect
-    SLIP_INCORRECT = -4             // The solution is incorrect
+    SLIP_OK = 0,                // all is well
+    SLIP_OUT_OF_MEMORY = -1,    // out of memory
+    SLIP_SINGULAR = -2,         // the input matrix A is singular
+    SLIP_INCORRECT_INPUT = -3,  // one or more input arguments are incorrect
+    SLIP_INCORRECT = -4,        // The solution is incorrect
+    SLIP_UNINITIALIZED = -5     // SLIP_LU used without proper initialization
+    // TODO add this check to the SLIP_ user codes (Tim)
 }
 SLIP_info ;
 
@@ -177,14 +181,13 @@ SLIP_info ;
 
 typedef enum
 {
-    SLIP_SMALLEST = 0,              // Smallest pivot
-    SLIP_DIAGONAL = 1,              // Diagonal pivoting
-    SLIP_FIRST_NONZERO = 2,         // First nonzero per column chosen as pivot
-    SLIP_TOL_SMALLEST = 3,          // Diagonal pivoting with tolerance for
-                                    // smallest pivot. Default
-    SLIP_TOL_LARGEST = 4,           // Diagonal pivoting with tolerance for
-                                    // largest pivot
-    SLIP_LARGEST = 5                // Largest pivot
+    SLIP_SMALLEST = 0,      // Smallest pivot
+    SLIP_DIAGONAL = 1,      // Diagonal pivoting
+    SLIP_FIRST_NONZERO = 2, // First nonzero per column chosen as pivot
+    SLIP_TOL_SMALLEST = 3,  // Diagonal pivoting with tol for smallest pivot.
+                            //   (Default)
+    SLIP_TOL_LARGEST = 4,   // Diagonal pivoting with tol. for largest pivot
+    SLIP_LARGEST = 5        // Largest pivot
 }
 SLIP_pivot ;
 
@@ -196,12 +199,11 @@ SLIP_pivot ;
 
 typedef enum
 {
-    SLIP_NO_ORDERING = 0,           // None: Not recommended for sparse matrices
-    SLIP_COLAMD = 1,                // COLAMD: Default
-    SLIP_AMD = 2                    // AMD
+    SLIP_NO_ORDERING = 0,   // None: A is factorized as-is
+    SLIP_COLAMD = 1,        // COLAMD: Default
+    SLIP_AMD = 2            // AMD
 }
 SLIP_col_order ;
-
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -209,177 +211,263 @@ SLIP_col_order ;
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-// This struct serves as a global struct to define all options
+// This struct serves as a global struct to define all user-selectable options.
 
 typedef struct SLIP_options
 {
-    SLIP_pivot pivot;           // Type of pivoting scheme used.
-    SLIP_col_order order;       // Type of column ordering scheme used
-    double tol;                 // User specified tolerance for SLIP_TOL_SMALLEST and
-                                // SLIP_TOL_LARGEST
-    int32_t print_level;        // 0: print nothing, 1: just errors,
-                                // 2: terse, with basic stats from COLAMD/AMD and SLIP
-                                // 3: all, with matrices and results
-    uint64_t prec;              // Precision used to output file if MPFR is chosen
-    mpfr_rnd_t SLIP_MPFR_ROUND; // Type of MPFR rounding used
-} SLIP_options;
+    SLIP_pivot pivot ;     // row pivoting scheme used.
+    SLIP_col_order order ; // column ordering scheme used
+    double tol ;           // tolerance for the row-pivotin methods
+                           // SLIP_TOL_SMALLEST and SLIP_TOL_LARGEST
+    int print_level ;      // 0: print nothing, 1: just errors,
+                           // 2: terse (basic stats from COLAMD/AMD and
+                           // SLIP LU), 3: all, with matrices and results
+    uint64_t prec ;        // Precision used to output file if MPFR is chosen
+    mpfr_rnd_t round ;     // Type of MPFR rounding used
+    bool check ;           // Set true if the solution to the system should be
+                           // checked.  Intended for debugging only; SLIP_LU is
+                           // guaranteed to return the exact solution.
+} SLIP_options ;
 
-/* Purpose: Create and return SLIP_options pointer with default parameters
- * upon successful allocation, which are defined in SLIP_LU_internal.h
- * To free it, simply use SLIP_FREE(option)
- */
-SLIP_options* SLIP_create_default_options(void);
+// Purpose: Create and return SLIP_options object with default parameters
+// upon successful allocation, which are defined in SLIP_LU_internal.h
+// To free it, simply use SLIP_FREE (option).
+SLIP_options* SLIP_create_default_options (void) ;
 
 //------------------------------------------------------------------------------
-// SLIP_sparse: a sparse matrix in compressed sparse column form
+// SLIP_matrix: a sparse CSC, sparse triplet, or dense matrix
 //------------------------------------------------------------------------------
 
-// This struct defines a matrix stored in sparse compressed column form. Since
-// this code deals with exact data structures, each SLIP_sparse stores
-// both the size of internal vectors and the number of elements allocated in
-// each one.  This is done to use as little memory as possible.
+// SLIP LU uses a single matrix data type, SLIP_matrix, which can be held in
+// one of three kinds of formats:  sparse CSC (compressed sparse column),
+// sparse triplet, and dense:
 
-// The matrix in sparse compressed column form is stored as follows.  p is an
-// array of size n+1.  The row indices of entries in column j are held in A->i
-// [A->p [j] ... A->p [j+1]-1].  The corresponding values are in the same
-// locations in A->x.  A->scale defines how the original input was scaled to
-// create the mpz_t integer form.  For an L or U factor, the scale is 1.
+typedef enum
+{
+    SLIP_CSC = 0,           // matrix is in compressed sparse column format
+    SLIP_TRIPLET = 1,       // matrix is in sparse triplet format
+    SLIP_DENSE = 2          // matrix is in dense format
+}
+SLIP_kind ;
+
+// Each of the three formats can have values of 5 different data types: mpz_t,
+// mpq_t, mpfr_t, int64_t, and double:
+
+typedef enum
+{
+    SLIP_MPZ = 0,           // matrix of mpz_t integers
+    SLIP_MPQ = 1,           // matrix of mpq_t rational numbers
+    SLIP_MPFR = 2,          // matrix of mpfr_t
+    SLIP_INT64 = 3,         // matrix of int64_t integers
+    SLIP_FP64 = 4           // matrix of doubles
+}
+SLIP_type ;
+
+// This gives a total of 15 different matrix types.  Not all functions accept
+// all 15 matrices types, however.
+
+// Suppose A is an m-by-n matrix with nz <= nzmax entries.
+// The p, i, j, and x components are defined as:
+
+// (0) SLIP_CSC:  A sparse matrix in CSC (compressed sparse column) format.
+//      A->p is an int64_t array of size n+1, A->i is an int64_t array of size
+//      nzmax (with nz <= nzmax), and A->x.type is an array of size nzmax of
+//      matrix entries ('type' is one of mpz, mpq, mpfr, int64, or fp64).  The
+//      row indices of column j appear in A->i [A->p [j] ... A->p [j+1]-1], and
+//      the values appear in the same locations in A->x.type.  The A->j array
+//      is NULL.  A->nz is ignored; nz is A->p [A->n].
+
+// (1) SLIP_TRIPLET:  A sparse matrix in triplet format.  A->i and A->j are
+//      both int64_t arrays of size nzmax, and A->x.type is an array of values
+//      of the same size.  The kth tuple has row index A->i [k], column index
+//      A->j [k], and value A->x.type [k], with 0 <= k < A->nz.  The A->p array
+//      is NULL.
+
+// (2) SLIP_DENSE:  A dense matrix.  The integer arrays A->p, A->i, and A->j
+//      are all NULL.  A->x.type is a pointer to an array of size m*n, stored
+//      in column-oriented format.  The value of A(i,j) is A->x.type [p]
+//      with p = i + j*A->m.  A->nz is ignored; nz is A->m * A->n.
+
+// The SLIP_matrix may contain 'shallow' components, A->p, A->i, A->j, and
+// A->x.  For example, if A->p_shallow is true, then a non-NULL A->p is a
+// pointer to a read-only array, and the A->p array is not freed by
+// SLIP_matrix_free.  If A->p is NULL (for a triplet or dense matrix), then
+// A->p_shallow has no effect.
 
 typedef struct
 {
-    int32_t m;    // Number of rows. Current version always uses n == m
-    int32_t n;    // Number of columns
-    int32_t nzmax;// Allocated size of A->i and A->x
-    int32_t nz;   // Number of nonzeros in the matrix
-    int32_t *p;   // Column pointers. Array size is n+1
-    int32_t *i;   // Row indices. Array size is nzmax, # of entries = nz
-    mpz_t *x;     // Values in matrix with size of nzmax, # of entries = nz
-    mpq_t scale ; // scale factor for the matrix
-} SLIP_sparse ;
+    int64_t m ;         // number of rows
+    int64_t n ;         // number of columns
+    int64_t nzmax ;     // size of A->i, A->j, and A->x
+    int64_t nz ;        // # nonzeros in a triplet matrix .
+                        // Ignored for CSC and dense matrices.
+    SLIP_kind kind ;    // CSC, triplet, or dense
+    SLIP_type type ;    // mpz, mpq, mpfr, int64, or fp64 (double)
 
-/* Purpose: This function return a created empty sparse matrix as SLIP_sparse
- * pointer upon successful malloc
- */
-SLIP_sparse *SLIP_create_sparse( void );
+    int64_t *p ;        // if CSC: column pointers, an array size is n+1.
+                        // if triplet or dense: A->p is NULL.
+    bool p_shallow ;    // if true, A->p is shallow.
 
-/* Purpose: This function deletes the sparse matrix A */
-void SLIP_delete_sparse
-(
-    SLIP_sparse **A // matrix to be deleted
-);
+    int64_t *i ;        // if CSC or triplet: row indices, of size nzmax.
+                        // if dense: A->i is NULL.
+    bool i_shallow ;    // if true, A->i is shallow.
+
+    int64_t *j ;        // if triplet: column indices, of size nzmax.
+                        // if CSC or dense: A->j is NULL.
+    bool j_shallow ;    // if true, A->j is shallow.
+
+    union               // A->x.type has size nzmax.
+    {
+        mpz_t *mpz ;            // A->x.mpz
+        mpq_t *mpq ;            // A->x.mpq
+        mpfr_t *mpfr ;          // A->x.mpfr
+        int64_t *int64 ;        // A->x.int64
+        double *fp64 ;          // A->x.fp64
+    } x ;
+    bool x_shallow ;    // if true, A->x.type is shallow.
+
+    mpq_t scale ;       // scale factor for mpz matrices (never shallow)
+                        // For all matrices who's type is not mpz,
+                        // mpz_scale = 1. 
+
+} SLIP_matrix ;
 
 //------------------------------------------------------------------------------
-// SLIP_dense: a dense 2D matrix of mpz_t entries
+// SLIP_matrix_allocate: allocate an m-by-n SLIP_matrix
 //------------------------------------------------------------------------------
 
-// If B is pointer to a m-by-n SLIP_dense matrix, then B->x [i][j] is the
-// entry B(i,j), of type mpz_t. The scaling factor is how the initial input
-// was modified in order to make B integral.
+// if shallow is false: All components (p,i,j,x) are allocated and set to zero,
+//                      and then shallow flags are all false.
 
-typedef struct
-{
-    int32_t m;    // Number of rows
-    int32_t n;    // Number of columns
-    mpz_t **x;    // Values in matrix with size of m*n
-    mpq_t scale ; // scale factor for the matrix
+// if shallow is true:  All components (p,i,j,x) are NULL, and their shallow
+//                      flags are all true.  The user can then set A->p,
+//                      A->i, A->j, and/or A->x accordingly, from their own
+//                      arrays.
 
-} SLIP_dense ;
-
-/* Purpose: This function creates an empty SLIP_dense matrix */
-SLIP_dense *SLIP_create_dense( void );
-
-/* Purpose: This function deletes the dense matrix A */
-void SLIP_delete_dense
+SLIP_info SLIP_matrix_allocate
 (
-    SLIP_dense **A
-);
+    SLIP_matrix **A_handle, // matrix to allocate
+    SLIP_kind kind,         // CSC, triplet, or dense
+    SLIP_type type,         // mpz, mpq, mpfr, int64, or double
+    int64_t m,              // # of rows
+    int64_t n,              // # of columns
+    int64_t nzmax,          // max # of entries
+    bool shallow,           // if true, matrix is shallow.  A->p, A->i, A->j,
+                            // A->x are all returned as NULL and must be set
+                            // by the caller.  All A->*_shallow are returned
+                            // as true.
+    bool init,              // If true, and the data types are mpz, mpq, or
+                            // mpfr, the entries are initialized (using the
+                            // appropriate SLIP_mp*_init function). If false,
+                            // the mpz, mpq, and mpfr arrays are allocated but
+                            // not initialized.
+    const SLIP_options *option
+) ;
 
+//------------------------------------------------------------------------------
+// SLIP_matrix_free: free a SLIP_matrix
+//------------------------------------------------------------------------------
+
+SLIP_info SLIP_matrix_free
+(
+    SLIP_matrix **A_handle, // matrix to free
+    const SLIP_options *option
+) ;
+
+//------------------------------------------------------------------------------
+// SLIP_matrix_nnz: # of entries in a matrix
+//------------------------------------------------------------------------------
+
+int64_t SLIP_matrix_nnz     // return # of entries in A, or -1 on error
+(
+    const SLIP_matrix *A,         // matrix to query
+    const SLIP_options *option
+) ;
+
+//------------------------------------------------------------------------------
+// SLIP_matrix_copy: makes a copy of a matrix
+//------------------------------------------------------------------------------
+
+// SLIP_matrix_copy: make a copy of a SLIP_matrix, into another kind and type.
+
+SLIP_info SLIP_matrix_copy
+(
+    SLIP_matrix **C_handle, // matrix to create (never shallow)
+    // inputs, not modified:
+    SLIP_kind C_kind,       // C->kind: CSC, triplet, or dense
+    SLIP_type C_type,       // C->type: mpz_t, mpq_t, mpfr_t, int64_t, or double
+    SLIP_matrix *A,         // matrix to make a copy of (may be shallow)
+    const SLIP_options *option
+) ;
+
+//------------------------------------------------------------------------------
+// SLIP_matrix macros
+//------------------------------------------------------------------------------
+
+// These macros simplify the access to entries in a SLIP_matrix.
+// The type parameter is one of: mpq, mpz, mpfr, int64, or fp64.
+
+// To access the kth entry in a SLIP_matrix using 1D linear addressing,
+// in any matrix kind (CSC, triplet, or dense), in any type:
+#define SLIP_1D(A,k,type) ((A)->x.type [k])
+
+// To access the (i,j)th entry in a 2D SLIP_matrix, in any type:
+#define SLIP_2D(A,i,j,type) SLIP_1D (A, (i)+(j)*((A)->m), type)
 
 //------------------------------------------------------------------------------
 // SLIP_LU_analysis: symbolic pre-analysis
 //------------------------------------------------------------------------------
 
-/* This struct stores the column permutation for LU and the guess on nnz for
- * L and U */
+// This struct stores the column permutation for LU and the guess on the
+// number of nonzeros in L and U.
 
 typedef struct
 {
-    int32_t *q;     // Column permutation for LU
-    int32_t lnz;    // Approximate number of nonzeros in L.
-                    // i.e., initial size of L
-    int32_t unz;    // Approximate number of nonzeros in U.
-                    // i.e., initial size of U
-} SLIP_LU_analysis;
+    int64_t *q ;    // Column permutation for LU factorization, representing
+                    // the permutation matrix Q.   The matrix A*Q is factorized.
+                    // If the kth column of L, U, and A*Q is column j of the
+                    // unpermuted matrix A, then j = S->q [k].
+    int64_t lnz ;   // Approximate number of nonzeros in L.
+    int64_t unz ;   // Approximate number of nonzeros in U.
+                    // lnz and unz are used to allocate the initial space for
+                    // L and U; the space is reallocated as needed.
+} SLIP_LU_analysis ;
 
-/* Purpose: This function returns a pointer to a created SLIP_LU_analysis type
- * with the length of S->q set as n (which needs to 1 + number of rows of input
- * matrix) upon successful malloc, otherwise, return NULL
- */
-SLIP_LU_analysis *SLIP_create_LU_analysis
-(
-    int32_t n      // length of S->q
-);
+// The symbolic analysis object is created by SLIP_LU_analyze.
 
-/* Purpose: This function frees the memory of the SLIP_LU_analysis struct
- *
- * Input is the SLIP_LU_analysis structure, it is destroyed on function
- * termination.
- */
-void SLIP_delete_LU_analysis
+// SLIP_LU_analysis_free frees the SLIP_LU_analysis object.
+void SLIP_LU_analysis_free        
 (
-    SLIP_LU_analysis **S // Structure to be deleted
-);
+    SLIP_LU_analysis **S, // Structure to be deleted
+    const SLIP_options *option
+) ;
 
 //------------------------------------------------------------------------------
 // Memory management
 //------------------------------------------------------------------------------
 
-/*
- * Purpose: calloc space of size n*size
- * on failure, NULL is returned
- */
+// SLIP_LU relies on the SuiteSparse memory management functions,
+// SuiteSparse_malloc, SuiteSparse_calloc, SuiteSparse_realloc, and
+// SuiteSparse_free.
 
-void * SLIP_calloc
+// Allocate and initialize memory space for SLIP_LU.
+void *SLIP_calloc
 (
-    size_t n,          // Size of array
-    size_t size        // Size to alloc
-);
+    size_t nitems,      // number of items to allocate
+    size_t size         // size of each item
+) ;
 
-/* Purpose: Define malloc and free for SLIP LU
- *
- * Output arguments are not modified, returned is either a pointer to
- * size space or a NULL pointer in the case of failure
- */
-void * SLIP_malloc
+// Allocate memory space for SLIP_LU.
+void *SLIP_malloc
 (
-    size_t size        // Size to alloc
-);
+    size_t size        // size of memory space to allocate
+) ;
 
-/* If p is non-NULL on input, it points to a previously allocated object of
- * size old_size * size_of_item.  The object is reallocated to be of size
- * new_size * size_of_item.  If p is NULL on input, then a new object of that
- * size is allocated.  On success, a pointer to the new object is returned, and
- * ok is returned as true.  If the allocation fails, ok is set to false and a
- * pointer to the old (unmodified) object is returned.
-*/
-void* SLIP_realloc
-(
-    void *p,            // Pointer to be realloced
-    size_t old_size,    // Old size of this pointer
-    size_t new_size     // New size of this pointer
-);
-
-/* Purpose: Free the memory associated with the pointer x
- *
- * If we have defined MATLAB, then we use MATLAB's mxFree,
- * otherwise, we use default free.
- *
- * This function safely does nothing if x is NULL on input.
- */
+// Free the memory allocated by SLIP_calloc, SLIP_malloc, or SLIP_realloc.
 void SLIP_free
 (
-    void *p         // Pointer to be free'd
-);
+    void *p         // pointer to memory space to free
+) ;
 
 // Free a pointer and set it to NULL.
 #define SLIP_FREE(p)                        \
@@ -388,596 +476,152 @@ void SLIP_free
     (p) = NULL ;                            \
 }
 
-//------------------------------------------------------------------------------
-//---------------------------Build the users input matrix from ccf--------------
-//------------------------------------------------------------------------------
+// SLIP_realloc is a wrapper for realloc.  If p is non-NULL on input, it points
+// to a previously allocated object of size old_size * size_of_item.  The
+// object is reallocated to be of size new_size * size_of_item.  If p is NULL
+// on input, then a new object of that size is allocated.  On success, a
+// pointer to the new object is returned.  If the reallocation fails, p is not
+// modified, and a flag is returned to indicate that the reallocation failed.
+// If the size decreases or remains the same, then the method always succeeds
+// (ok is returned as true).
 
-/* SLIP_build_sparse_ccf_[type] will allow the user to take a matrix of their
- * defined type (either double, mpfr_t, mpz_t, or mpq_t) and convert it from
- * their version of compressed column form to our data structure. The integrity
- * of the user defined arrays are maintained (therefore, one would need to
- * delete these arrays)
- *
- * On output, the SLIP_sparse* A structure contains the input matrix
- *
- */
+// Typical usage:  the following code fragment allocates an array of 10 int's,
+// and then increases the size of the array to 20 int's.  If the SLIP_malloc
+// succeeds but the SLIP_realloc fails, then the array remains unmodified,
+// of size 10.
+//
+//      int *p ;
+//      p = SLIP_malloc (10 * sizeof (int)) ;
+//      if (p == NULL) { error here ... }
+//      printf ("p points to an array of size 10 * sizeof (int)\n") ;
+//      bool ok ;
+//      p = SLIP_realloc (20, 10, sizeof (int), p, &ok) ;
+//      if (ok) printf ("p has size 20 * sizeof (int)\n") ;
+//      else printf ("realloc failed; p still has size 10 * sizeof (int)\n") ;
+//      SLIP_free (p) ;
 
-/* Purpose: Build a SLIP_sparse from mpz_t stored ccf matrix */
-
-SLIP_info SLIP_build_sparse_ccf_mpz
+void *SLIP_realloc      // pointer to reallocated block, or original block
+                        // if the realloc failed
 (
-    SLIP_sparse *A_output,// It should be initialized but unused yet
-    int32_t *p,           // The set of column pointers
-    int32_t *I,           // set of row indices
-    mpz_t *x,             // Set of values in full precision int.
-    int32_t n,            // dimension of the matrix
-    int32_t nz            // number of nonzeros in A (size of x and I vectors)
-);
-
-/* Purpose: Build a SLIP_sparse from double stored ccf matrix */
-
-SLIP_info SLIP_build_sparse_ccf_double
-(
-    SLIP_sparse *A_output,// It should be initialized but unused yet
-    int32_t *p,           // The set of column pointers
-    int32_t *I,           // set of row indices
-    double *x,            // Set of values as doubles
-    int32_t n,            // dimension of the matrix
-    int32_t nz,            // number of nonzeros in A (size of x and I vectors)
-    SLIP_options* option
-);
-
-/* Purpose: Build a SLIP_sparse from int stored ccf matrix */
-
-SLIP_info SLIP_build_sparse_ccf_int
-(
-    SLIP_sparse *A_output,// It should be initialized but unused yet
-    int32_t *p,           // The set of column pointers
-    int32_t *I,           // set of row indices
-    int32_t *x,           // Set of values as doubles
-    int32_t n,            // dimension of the matrix
-    int32_t nz            // number of nonzeros in A (size of x and I vectors)
-);
-
-/* Purpose: Build a SLIP_sparse from mpq_t stored ccf matrix */
-
-SLIP_info SLIP_build_sparse_ccf_mpq
-(
-    SLIP_sparse *A_output,// It should be initialized but unused yet
-    int32_t *p,           // The set of column pointers
-    int32_t *I,           // set of row indices
-    mpq_t *x,             // Set of values as mpq_t rational numbers
-    int32_t n,            // dimension of the matrix
-    int32_t nz            // number of nonzeros in A (size of x and I vectors)
-);
-
-/* Purpose: Build a SLIP_sparse from int stored ccf matrix */
-
-SLIP_info SLIP_build_sparse_ccf_mpfr
-(
-    SLIP_sparse *A_output,// It should be initialized but unused yet
-    int32_t *p,           // The set of column pointers
-    int32_t *I,           // set of row indices
-    mpfr_t *x,            // Set of values as doubles
-    int32_t n,            // dimension of the matrix
-    int32_t nz,           // number of nonzeros in A (size of x and I vectors)
-    SLIP_options *option  // command options containing the prec for mpfr
-);
-
-//------------------------------------------------------------------------------
-//---------------------------Build the users input matrix from triplet----------
-//------------------------------------------------------------------------------
-/* SLIP_build_sparse_trip_[type] will allow the user to take a matrix of their
- * defined type (either double, mpfr_t, mpz_t, or mpq_t) and convert it from
- * their triplet form to our data structure. The integrity of the user defined
- * arrays are maintained (therefore, one would need to delete these arrays)
- *
- * On output, the SLIP_sparse* A contains the user's matrix
- *
- */
-
-/* Purpose: Build a sparse matrix from triplet form where input is mpz_t */
-SLIP_info SLIP_build_sparse_trip_mpz
-(
-    SLIP_sparse *A_output,// It should be initialized but unused yet
-    int32_t *I,         // set of row indices
-    int32_t *J,         // set of column indices
-    mpz_t *x,           // Set of values in full precision int
-    int32_t n,          // dimension of the matrix
-    int32_t nz          // number of nonzeros in A (size of x, I, and J vectors)
-);
-
-/* Purpose: Build a sparse matrix from triplet form where input is double */
-SLIP_info SLIP_build_sparse_trip_double
-(
-    SLIP_sparse *A_output,// It should be initialized but unused yet
-    int32_t *I,         // set of row indices
-    int32_t *J,         // set of column indices
-    double *x,          // Set of values in double
-    int32_t n,          // dimension of the matrix
-    int32_t nz,          // number of nonzeros in A (size of x, I, and J vectors)
-    SLIP_options* option
-);
-
-/* Purpose: Build a sparse matrix from triplet form where input is int */
-SLIP_info SLIP_build_sparse_trip_int
-(
-    SLIP_sparse *A_output,// It should be initialized but unused yet
-    int32_t *I,         // set of row indices
-    int32_t *J,         // set of column indices
-    int32_t *x,             // Set of values in int
-    int32_t n,          // dimension of the matrix
-    int32_t nz          // number of nonzeros in A (size of x, I, and J vectors)
-);
-
-/* Purpose: Build a sparse matrix from triplet form where input is mpq_t */
-SLIP_info SLIP_build_sparse_trip_mpq
-(
-    SLIP_sparse *A_output,// It should be initialized but unused yet
-    int32_t *I,         // set of row indices
-    int32_t *J,         // set of column indices
-    mpq_t *x,           // Set of values as rational numbers
-    int32_t n,          // dimension of the matrix
-    int32_t nz          // number of nonzeros in A (size of x, I, and J vectors)
-);
-
-/* Purpose: Build a sparse matrix from triplet form where input is mpfr_t */
-SLIP_info SLIP_build_sparse_trip_mpfr
-(
-    SLIP_sparse *A_output,// It should be initialized but unused yet
-    int32_t *I,         // set of row indices
-    int32_t *J,         // set of column indices
-    mpfr_t *x,          // Set of values as mpfr_t
-    int32_t n,          // dimension of the matrix
-    int32_t nz,         // number of nonzeros in A (size of x, I, and J vectors)
-    SLIP_options *option// command options containing the prec for mpfr
-);
-
-//------------------------------------------------------------------------------
-//---------------------------Build a dense matrix-------------------------------
-//------------------------------------------------------------------------------
-
-/* SLIP_build_dense_[type] will allow the user to take a rhs matrix of their
- * defined type (either double, mpfr_t, mpz_t, or mpq_t) and convert it from
- * their form to mpz. The integrity of the user defined arrays are maintained
- * (therefore, one would need to delete these arrays).
- *
- * On output, the SLIP_dense *A contains the user's matrix
- *
- */
-
-/* Purpose: Build a dense matrix from mpz input */
-SLIP_info SLIP_build_dense_mpz
-(
-    SLIP_dense *A_output, // Dense matrix, allocated but unused
-    mpz_t **b,            // Set of values in full precision int.
-    int32_t m,            // number of rows
-    int32_t n             // number of columns
-);
-
-/* Purpose: Build a dense matrix from double input */
-SLIP_info SLIP_build_dense_double
-(
-    SLIP_dense *A_output, // Dense matrix, allocated but unused
-    double **b,           // Set of values as doubles
-    int32_t m,            // number of rows
-    int32_t n,             // number of columns
-    SLIP_options* option
-);
-
-/* Purpose: Build a dense matrix from int input */
-SLIP_info SLIP_build_dense_int
-(
-    SLIP_dense *A_output, // Dense matrix, allocated but unused
-    int32_t **b,          // Set of values as ints
-    int32_t m,            // number of rows
-    int32_t n             // number of columns
-);
-
-/* Purpose: Build a dense matrix from mpq_t input */
-SLIP_info SLIP_build_dense_mpq
-(
-    SLIP_dense *A_output, // dense matrix, allocated but unused
-    mpq_t **b,            // set of values as mpq_t
-    int32_t m,            // number of rows
-    int32_t n             // number of columns
-);
-
-/* Purpose: Build a dense matrix from mpfr_t input */
-SLIP_info SLIP_build_dense_mpfr
-(
-    SLIP_dense *A_output, // Dense matrix, allocated but unused
-    mpfr_t **b,           // Set of values as mpfr_t
-    int32_t m,            // number of rows
-    int32_t n,            // number of columns
-    SLIP_options *option  // command options containing the prec for mpfr
-);
-
-//------------------------------------------------------------------------------
-// double_mat: 2D double matrix
-//------------------------------------------------------------------------------
-
-// Creates a 2D double matrix, where A[i][j] is the (i,j)th entry.
-// A[i] is a pointer to a row, of size n.
-
-/* Purpose: This function creates a double matrix of size m*n. */
-double** SLIP_create_double_mat
-(
-    int32_t m,     // number of rows
-    int32_t n      // number of columns
-);
-
-/* Purpose: This function frees a dense double matrix.
- *
- * Input is a double*** mat and is destroyed on function completion.
- */
-void SLIP_delete_double_mat
-(
-    double*** A,   // dense matrix
-    int32_t m,     // number of rows of A
-    int32_t n      // number of columns of A
-);
-
-//------------------------------------------------------------------------------
-// int_mat: 2D int32 matrix
-//------------------------------------------------------------------------------
-
-// Creates a 2D int32 matrix, where A[i][j] is the (i,j)th entry.
-// A[i] is a pointer to row i, of size n.
-
-/* Purpose: This function creates an int matrix of size m*n. */
-int32_t** SLIP_create_int_mat
-(
-    int32_t m,     // number of rows
-    int32_t n      // number of columns
-);
-
-/* Purpose: This function deletes a dense int matrix.
- *
- * Input is a int*** mat and its dimensions.
- * Input mat is destroyed on function completion
- */
-void SLIP_delete_int_mat
-(
-    int32_t*** A,  // dense matrix
-    int32_t m,     // number of rows
-    int32_t n      // number of columns
-);
-
-//------------------------------------------------------------------------------
-// mpfr_mat:  a 2D mpfr_t matrix
-//------------------------------------------------------------------------------
-
-// Creates a 2D mpfr_t matrix, where A[i][j] is the (i,j)th entry.
-// A[i] is a pointer to a row i, of size n.
-
-/* Purpose: This function creates a mpfr_t matrix of size m*n with
- * precision prec
- */
-mpfr_t** SLIP_create_mpfr_mat
-(
-    int32_t m,     // number of rows
-    int32_t n,     // number of columns
-    SLIP_options *option  // command options containing the prec for mpfr
-);
-
-/* Purpose: This function deletes a dense mpfr matrix.
- *
- * Input is a mpfr*** mat which is destroyed on completion
- */
-void SLIP_delete_mpfr_mat
-(
-    mpfr_t ***A,   // Dense mpfr matrix
-    int32_t m,     // number of rows of A
-    int32_t n      // number of columns of A
-);
-
-//------------------------------------------------------------------------------
-// mpq_mat:  a 2D mpq_t matrix
-//------------------------------------------------------------------------------
-
-// Creates a 2D mpq_t matrix, where A[i][j] is the (i,j)th entry.
-// A[i] is a pointer to row i, of size n.
-
-/* Purpose: This function creates a mpq_t matrix of size m*n. */
-mpq_t** SLIP_create_mpq_mat
-(
-    int32_t m,     // number of rows
-    int32_t n      // number of columns
-);
-
-/* Purpose: This function deletes a dense mpq matrix
- *
- * Input is a mpq_t*** matrix which is destroyed upon function completion
- */
-void SLIP_delete_mpq_mat
-(
-    mpq_t***A,     // dense mpq matrix
-    int32_t m,     // number of rows of A
-    int32_t n      // number of columns of A
-);
-
-//------------------------------------------------------------------------------
-// mpz_mat:  a 2D mpz_t matrix
-//------------------------------------------------------------------------------
-
-// Creates a 2D mpz_t matrix, where A[i][j] is the (i,j)th entry.
-// A[i] is a pointer to row i, of size n.
-
-/* Purpose: This function creates a dense mpz_t matrix of size m*n to
- * default size
- */
-mpz_t** SLIP_create_mpz_mat
-(
-    int32_t m,     // number of rows
-    int32_t n      // number of columns
-);
-
-/* Purpose: This function deletes a dense mpz matrix
- *
- * Input is a mpz_t*** matrix which is destoyed on completion
- */
-void SLIP_delete_mpz_mat
-(
-    mpz_t ***A,     // The dense mpz matrix
-    int32_t m,      // number of rows of A
-    int32_t n       // number of columns of A
-);
-
-//------------------------------------------------------------------------------
-// mpfr_vector: a 1D mpfr_t array
-//------------------------------------------------------------------------------
-
-// Creates a simple 1D array, where A[i] is an entry of type mpfr_t.
-
-/* Purpose: This function creates a MPFR array of desired precision*/
-mpfr_t* SLIP_create_mpfr_array
-(
-    int32_t n,     // size of the array
-    SLIP_options *option  // command options containing the prec for mpfr
-);
-
-/* Purpose: This function clears the memory used for an mpfr array of size n.
- *
- * Input is a mpfr** array and its size. The input array is destroyed on output
- */
-void SLIP_delete_mpfr_array
-(
-    mpfr_t** x,    // mpfr array to be deleted
-    int32_t n      // size of x
-);
-
-//------------------------------------------------------------------------------
-// mpq_vector: a 1D mpq_t array
-//------------------------------------------------------------------------------
-
-// Creates a simple 1D array, where A[i] is an entry of type mpq_t.
-
-/* Purpose: This function creates an mpq array of size n.
- * This function must be called for all mpq arrays created.
- */
-mpq_t* SLIP_create_mpq_array
-(
-    int32_t n      // size of the array
-);
-
-/* Purpose: This function clears the memory used for an mpq vector of size n.
- * Call this for all mpq vectors when done.
- *
- * Input is a mpq_t** array which is destroyed upon function completion
- */
-void SLIP_delete_mpq_array
-(
-    mpq_t** x,     // mpq array to be deleted
-    int32_t n      // size of x
-);
-
-//------------------------------------------------------------------------------
-// mpz_vector: a 1D mpz_t array
-//------------------------------------------------------------------------------
-
-// Creates a simple 1D array, where A[i] is an entry of type mpz_t.
-
-/* Purpose: This function creates an mpz array of size n and allocates
- * default size.
- */
-mpz_t* SLIP_create_mpz_array
-(
-    int32_t n      // Size of x
-);
-
-/* Purpose: This function clears the memory used for an mpz vector of size n.
- * Call this function for all mpz vectors when done.
- *
- * Input is a mpz_t** array which is destroyed upon function completion
- *
- */
-void SLIP_delete_mpz_array
-(
-    mpz_t ** x,     // mpz array to be deleted
-    int32_t n       // Size of x
-);
-
-//------------------------------------------------------------------------------
+    int64_t nitems_new,     // new number of items in the object
+    int64_t nitems_old,     // old number of items in the object
+    size_t size_of_item,    // sizeof each item
+    void *p,                // old object to reallocate
+    bool *ok                // true if success, false on failure
+) ;
 
 //------------------------------------------------------------------------------
 // SLIP LU memory environment routines
 //------------------------------------------------------------------------------
 
-/*
- * Purpose: This function initializes the working evironment for SLIP LU
- * library.
- */
-void SLIP_initialize (void);
+// SLIP_initialize: initializes the working evironment for SLIP LU library.
+// It must be called prior to calling any other SLIP_* function.
+void SLIP_initialize (void) ;
 
-/* Purpose: Initialize SLIP LU with user defined memory functions 
- */
+// SLIP_initialize_expert is the same as SLIP_initialize, except that it allows
+// for a redefinition of custom memory functions that are used for SLIP_LU and
+// GMP.  The four inputs to this function are pointers to four functions with
+// the same signatures as the ANSI C malloc, calloc, realloc, and free.
 void SLIP_initialize_expert
 (
-    void* (*MyMalloc) (size_t),                     // User defined malloc function
-    void* (*MyRealloc) (void *, size_t, size_t),    // User defined realloc function
-    void (*MyFree) (void*, size_t)                  // User defined free function
-);
+    void* (*MyMalloc) (size_t),             // user-defined malloc
+    void* (*MyCalloc) (size_t, size_t),     // user-defined calloc
+    void* (*MyRealloc) (void *, size_t),    // user-defined realloc
+    void  (*MyFree) (void *)                // user-defined free
+) ;
 
-/*
- * Purpose: This function finalizes the working evironment for SLIP LU library.
- */
-void SLIP_finalize (void);
-
+// SLIP_finalize: This function finalizes the working evironment for SLIP LU
+// library, and frees any internal workspace created by SLIP_LU.  It must be
+// called as the last SLIP_* function called.
+void SLIP_finalize (void) ;
 
 //------------------------------------------------------------------------------
 // Primary factorization & solve routines
 //------------------------------------------------------------------------------
 
-/*
- * Purpose: This function performs the symbolic ordering for SLIP LU. Currently,
- * there are four options: user defined order, COLAMD, AMD.
- */
+// SLIP_backslash solves the linear system Ax = b. This is the simplest way to
+// use the SLIP LU package. This function encompasses both factorization and
+// solve and returns the solution vector in the user desired type.  It can be
+// thought of as an exact version of MATLAB sparse backslash.
+SLIP_info SLIP_backslash
+(
+    // Output
+    SLIP_matrix **X_handle,       // Final solution vector
+    // Input
+    SLIP_type type,               // Type of output desired:
+                                  // Must be SLIP_MPQ, SLIP_MPFR,
+                                  // or SLIP_FP64
+    const SLIP_matrix *A,         // Input matrix
+    const SLIP_matrix *b,         // Right hand side vector(s)
+    const SLIP_options* option
+) ;
+
+// SLIP_LU_analyze performs the symbolic ordering and analysis for SLIP LU.
+// Currently, there are three options: no ordering, COLAMD, and AMD.
 SLIP_info SLIP_LU_analyze
 (
-    SLIP_LU_analysis *S,  // symbolic analysis (column permutation and nnz L,U)
-    SLIP_sparse *A,       // Input matrix
-    SLIP_options *option  // Control parameters
-);
+    SLIP_LU_analysis **S, // symbolic analysis (column permutation and nnz L,U)
+    const SLIP_matrix *A, // Input matrix
+    const SLIP_options *option  // Control parameters
+) ;
 
-/* Purpose: This function performs the SLIP LU factorization. This factorization
- * is done via n iterations of the sparse REF triangular solve function. The
- * overall factorization is PAQ = LDU
- * The determinant can be obtained as rhos[n-1]
- *
- *  A: input only, not modified
- *  L: allocated on input, modified on output
- *  U: allocated on input, modified on output
- *  S: input only, not modified
- *  rhos: allocated on input, modified on output
- *  pinv: allocated on input, modified on output
- *  option: input only, not modified
- */
+// SLIP_LU_factorize performs the SLIP LU factorization. This factorization is
+// done via n iterations of the sparse REF triangular solve function. The
+// overall factorization is PAQ = LDU.  The determinant can be obtained as
+// rhos->x.mpz[n-1].
+// 
+//  L: undefined on input, created on output
+//  U: undefined on input, created on output
+//  rhos: undefined on input, created on output
+//  pinv: undefined on input, created on output
+// 
+//  A: input only, not modified
+//  S: input only, not modified
+//  option: input only, not modified
 SLIP_info SLIP_LU_factorize
 (
-    SLIP_sparse *L,         // lower triangular matrix
-    SLIP_sparse *U,         // upper triangular matrix
-    SLIP_sparse *A,         // matrix to be factored
-    SLIP_LU_analysis *S,    // prior symbolic analysis
-    mpz_t *rhos,            // sequence of pivots
-    int32_t *pinv,          // inverse row permutation
-    SLIP_options *option    // command options
-);
-
-// Solves Ax=b, returning the solution x as a double matrix
-SLIP_info SLIP_solve_double
-(
-    double **x_doub,        // Solution vector stored as an double
-    SLIP_sparse *A,         // Compressed column form full precision matrix A
-    SLIP_LU_analysis *S,    // Column ordering
-    SLIP_dense *b,          // Right hand side vectrors
-    SLIP_options *option    // Control parameters
-);
-
-// Solves Ax=b, returning the solution x as an mpfr_t matrix
-SLIP_info SLIP_solve_mpfr
-(
-    mpfr_t **x_mpfr,        // Solution vector stored as an mpfr_t array
-    SLIP_sparse *A,         // Compressed column form full precision matrix A
-    SLIP_LU_analysis *S,    // Column ordering
-    SLIP_dense *b,          // Right hand side vectrors
-    SLIP_options *option    // Control parameters
-);
-
-// Solves Ax=b, returning the solution x as an mpq_t matrix
-SLIP_info SLIP_solve_mpq
-(
-    mpq_t **x_mpq,          // Solution vector stored as an mpq_t array
-    SLIP_sparse *A,         // Compressed column form full precision matrix A
-    SLIP_LU_analysis *S,    // Column ordering
-    SLIP_dense *b,          // Right hand side vectrors
-    SLIP_options *option    // Control parameters
-);
-
-/*
- * Purpose: This function permutes x to get it back in its original form.
- * That is x = Q*x.
- */
-SLIP_info SLIP_permute_x
-(
-    mpq_t **x,            // Solution vector
-    int32_t n,            // Size of solution vector
-    int32_t numRHS,       // number of RHS vectors
-    SLIP_LU_analysis *S   // symbolic analysis with the column ordering Q
-);
-
-
-/* Purpose: This function scales the x matrix if necessary */
-SLIP_info SLIP_scale_x
-(
-    mpq_t **x,              // Solution matrix
-    SLIP_sparse *A,         // matrix A
-    SLIP_dense *b           // right hand side
-);
-
-/* Purpose: This function solves the linear system LD^(-1)U x = b.*/
-SLIP_info SLIP_LU_solve     //solves the linear system LD^(-1)U x = b
-(
-    mpq_t **x,              // rational solution to the system
-    SLIP_dense *b,          // right hand side vector
-    mpz_t *rhos,            // sequence of pivots
-    SLIP_sparse *L,         // lower triangular matrix
-    SLIP_sparse *U,         // upper triangular matrix
-    int32_t *pinv           // row permutation
-);
-
-// check and print a SLIP_sparse matrix
-SLIP_info SLIP_spok  // returns a SLIP_LU status code
-(
-    SLIP_sparse *A,     // matrix to check
-    SLIP_options* option  // Determine print level
+    // output:
+    SLIP_matrix **L_handle,     // lower triangular matrix
+    SLIP_matrix **U_handle,     // upper triangular matrix
+    SLIP_matrix **rhos_handle,  // sequence of pivots
+    int64_t **pinv_handle,      // inverse row permutation
+    // input:
+    const SLIP_matrix *A,        // matrix to be factored
+    const SLIP_LU_analysis *S,   // stores guess on nnz and column permutation
+    const SLIP_options* option
 ) ;
 
-/* Purpose: Convert the output mpq_t** solution vector obtained from
- * SLIP_Solve and SLIP_Permute_x from mpq_t** to double
- * x_doub has to be initialized before passed in
- */
-SLIP_info SLIP_get_double_soln
+// SLIP_LU_solve solves the linear system LD^(-1)U x = b.
+SLIP_info SLIP_LU_solve         // solves the linear system LD^(-1)U x = b
 (
-    double **x_doub,      // double soln of size n*numRHS to Ax = b
-    mpq_t  **x_mpq,       // mpq solution to Ax = b. x is of size n*numRHS
-    int32_t n,            // Dimension of A, number of rows of x
-    int32_t numRHS        // Number of right hand side vectors
+    // Output
+    SLIP_matrix **X_handle,     // rational solution to the system
+    // input:
+    const SLIP_matrix *b,       // right hand side vector
+    const SLIP_matrix *A,       // Input matrix
+    const SLIP_matrix *L,       // lower triangular matrix
+    const SLIP_matrix *U,       // upper triangular matrix
+    const SLIP_matrix *rhos,    // sequence of pivots
+    const SLIP_LU_analysis *S,  // symbolic analysis struct
+    const int64_t *pinv,        // inverse row permutation
+    const SLIP_options* option
 ) ;
 
-/* Purpose: Convert the output mpq_t** solution vector obtained from
- * SLIP_Solve and SLIP_Permute_x from mpq_t** to mpfr_t**
- * x_mpfr has to be initialized before passed in
- */
-
-SLIP_info SLIP_get_mpfr_soln
+// SLIP_matrix_check: check and print a SLIP_sparse matrix
+SLIP_info SLIP_matrix_check     // returns a SLIP_LU status code
 (
-    mpfr_t **x_mpfr,      // mpfr solution of size n*numRHS to Ax = b
-    mpq_t  **x_mpq,       // mpq solution of size n*numRHS to Ax = b.
-    int32_t n,            // Dimension of A, number of rows of x
-    int32_t numRHS,        // Number of right hand side vectors
-    SLIP_options* option
-);
-
-/*
- * Check the solution of the linear system
- * Performs a quick rational arithmetic A*x=b
- */
-SLIP_info SLIP_check_solution
-(
-    SLIP_sparse *A,           // input matrix
-    mpq_t **x,                // solution vector
-    SLIP_dense *b             // right hand side
-);
+    const SLIP_matrix *A,       // matrix to check
+    const SLIP_options* option  // defines the print level
+) ;
 
 //------------------------------------------------------------------------------
 //---------------------------SLIP GMP/MPFR Functions----------------------------
 //------------------------------------------------------------------------------
-/* The following functions are the SLIP LU interface to the GMP/MPFR libary. Each 
- * corresponding GMP/MPFR function is given a wrapper to ensure that no memory 
- * leaks or crashes occur. All covered GMP functions can be found in SLIP_gmp.c
- *
- */
+
+// The following functions are the SLIP LU interface to the GMP/MPFR libary.
+// Each corresponding GMP/MPFR function is given a wrapper to ensure that no
+// memory leaks or crashes occur. All covered GMP functions can be found in
+// SLIP_gmp.c
 
 // The GMP library does not handle out-of-memory failures.  However, it does
 // provide a mechanism for passing function pointers that replace GMP's use of
@@ -990,240 +634,136 @@ SLIP_info SLIP_check_solution
 // returned to GMP.  Instead, all allocated blocks in the list are freed,
 // and slip_gmp_allocate returns directly to wrapper.
 
+SLIP_info SLIP_mpfr_asprintf (char **str, const char *format, ... ) ;
 
-#ifndef SLIP_GMP_LIST_INIT
-// A size of 32 ensures that the list never needs to be increased in size.
-// The test coverage suite in SLIP_LU/Tcov reduces this initial size to
-// exercise the code, in SLIP_LU/Tcov/Makefile.
-#define SLIP_GMP_LIST_INIT 32
-#endif
+SLIP_info SLIP_gmp_fscanf (FILE *fp, const char *format, ... ) ;
 
-// uncomment this to print memory debugging info
-// #define SLIP_GMP_MEMORY_DEBUG
+SLIP_info SLIP_mpz_init (mpz_t x) ;
 
-#ifdef SLIP_GMP_MEMORY_DEBUG
-void slip_gmp_dump ( void ) ;
-#endif
+SLIP_info SLIP_mpz_init2(mpz_t x, const size_t size) ;
 
+SLIP_info SLIP_mpz_set (mpz_t x, const mpz_t y) ;
 
-#define SLIP_GMP_WRAPPER_START                                          \
-{                                                                       \
-    slip_gmp_nmalloc = 0 ;                                              \
-    /* setjmp returns 0 if called from here, or > 0 if from longjmp */  \
-    int32_t slip_gmp_status = setjmp (slip_gmp_environment) ;           \
-    if (slip_gmp_status != 0)                                           \
-    {                                                                   \
-        /* failure from longjmp */                                      \
-        slip_gmp_failure (slip_gmp_status) ;                            \
-        return (SLIP_OUT_OF_MEMORY) ;                                   \
-    }                                                                   \
-}
-#define SLIP_GMPZ_WRAPPER_START(x)                                      \
-{                                                                       \
-    slip_gmpz_archive = (mpz_t *) x;                                    \
-    slip_gmpq_archive = NULL;                                           \
-    slip_gmpfr_archive = NULL;                                          \
-    SLIP_GMP_WRAPPER_START;                                             \
-}
+SLIP_info SLIP_mpz_set_ui (mpz_t x, const uint64_t y) ;
 
-#define SLIP_GMPQ_WRAPPER_START(x)                                      \
-{                                                                       \
-    slip_gmpz_archive = NULL;                                           \
-    slip_gmpq_archive =(mpq_t *) x;                                     \
-    slip_gmpfr_archive = NULL;                                          \
-    SLIP_GMP_WRAPPER_START;                                             \
-}
+SLIP_info SLIP_mpz_set_si (mpz_t x, const int64_t y) ;
 
-#define SLIP_GMPFR_WRAPPER_START(x)                                     \
-{                                                                       \
-    slip_gmpz_archive = NULL;                                           \
-    slip_gmpq_archive = NULL;                                           \
-    slip_gmpfr_archive = (mpfr_t *) x;                                  \
-    SLIP_GMP_WRAPPER_START;                                             \
-}
+SLIP_info SLIP_mpz_get_d (double *x, const mpz_t y) ;
 
-#define SLIP_GMP_WRAPPER_FINISH                                         \
-{                                                                       \
-    /* clear (but do not free) the list.  The caller must ensure */     \
-    /* the result is eventually freed. */                               \
-    slip_gmpz_archive = NULL ;                                          \
-    slip_gmpq_archive = NULL ;                                          \
-    slip_gmpfr_archive = NULL ;                                         \
-    slip_gmp_nmalloc = 0 ;                                              \
-}
+SLIP_info SLIP_mpz_get_si (int64_t *x, const mpz_t y) ;
 
-// free a block of memory, and also remove it from the archive if it's there
-#define SLIP_SAFE_FREE(p)                                               \
-{                                                                       \
-    if (slip_gmpz_archive != NULL)                                      \
-    {                                                                   \
-        if (p == MPZ_PTR(*slip_gmpz_archive))                           \
-        {                                                               \
-            MPZ_PTR(*slip_gmpz_archive) = NULL ;                        \
-        }                                                               \
-    }                                                                   \
-    else if (slip_gmpq_archive != NULL)                                 \
-    {                                                                   \
-        if (p == MPZ_PTR(MPQ_NUM(*slip_gmpq_archive)))                  \
-        {                                                               \
-            MPZ_PTR(MPQ_NUM(*slip_gmpq_archive)) = NULL ;               \
-        }                                                               \
-        if (p == MPZ_PTR(MPQ_DEN(*slip_gmpq_archive)))                  \
-        {                                                               \
-            MPZ_PTR(MPQ_DEN(*slip_gmpq_archive)) = NULL ;               \
-        }                                                               \
-    }                                                                   \
-    else if (slip_gmpfr_archive != NULL)                                \
-    {                                                                   \
-        if (p == MPFR_REAL_PTR(*slip_gmpfr_archive))                    \
-        {                                                               \
-            MPFR_MANT(*slip_gmpfr_archive) = NULL ;                     \
-        }                                                               \
-    }                                                                   \
-    SLIP_FREE (p) ;                                                     \
-}
+SLIP_info SLIP_mpz_set_q (mpz_t x, const mpq_t y) ;
 
-extern int64_t slip_gmp_ntrials ;
+SLIP_info SLIP_mpz_mul (mpz_t a, const mpz_t b, const mpz_t c) ;
 
-SLIP_info SLIP_gmp_fprintf(FILE *fp, const char *format, ... );
+SLIP_info SLIP_mpz_submul (mpz_t x, const mpz_t y, const mpz_t z) ;
 
-SLIP_info SLIP_gmp_printf(const char *format, ... );
+SLIP_info SLIP_mpz_divexact (mpz_t x, const mpz_t y, const mpz_t z) ;
 
-SLIP_info SLIP_gmp_fscanf(FILE *fp, const char *format, ... );
+SLIP_info SLIP_mpz_gcd (mpz_t x, const mpz_t y, const mpz_t z) ;
 
-#if 0
-/* This function is currently unused, but kept here for future reference. */
-SLIP_info slip_mpfr_asprintf (char **str, const char *template, ... );
+SLIP_info SLIP_mpz_lcm (mpz_t lcm, const mpz_t x, const mpz_t y) ;
 
-SLIP_info slip_mpfr_free_str (char *str);
-#endif
+SLIP_info SLIP_mpz_abs (mpz_t x, const mpz_t y) ;
 
-SLIP_info SLIP_mpfr_fprintf(FILE *fp, const char *format, ... );
+SLIP_info SLIP_mpz_cmp (int *r, const mpz_t x, const mpz_t y) ;
 
-bool slip_gmp_init (void) ;
+SLIP_info SLIP_mpz_cmpabs (int *r, const mpz_t x, const mpz_t y) ;
 
-void slip_gmp_finalize (void) ;
- 
-void *slip_gmp_allocate (size_t size) ;
+SLIP_info SLIP_mpz_cmp_ui (int *r, const mpz_t x, const uint64_t y) ;
 
-void slip_gmp_free (void *p, size_t size) ;
+SLIP_info SLIP_mpz_sgn (int *sgn, const mpz_t x) ;
 
-void *slip_gmp_reallocate (void *p_old, size_t old_size, size_t new_size );
+SLIP_info SLIP_mpz_sizeinbase (size_t *size, const mpz_t x, int64_t base) ;
 
-void slip_gmp_failure (int32_t status) ;
+SLIP_info SLIP_mpq_init (mpq_t x) ;
 
-SLIP_info SLIP_mpz_init(mpz_t x) ;
+SLIP_info SLIP_mpq_set (mpq_t x, const mpq_t y) ;
 
-SLIP_info SLIP_mpz_init2(mpz_t x, const uint64_t size) ;
+SLIP_info SLIP_mpq_set_z (mpq_t x, const mpz_t y) ;
 
-SLIP_info SLIP_mpz_set(mpz_t x, const mpz_t y);
+SLIP_info SLIP_mpq_set_d (mpq_t x, const double y) ;
 
-SLIP_info SLIP_mpz_set_ui(mpz_t x, const uint64_t y) ;
+SLIP_info SLIP_mpq_set_ui (mpq_t x, const uint64_t y, const uint64_t z) ;
 
-SLIP_info SLIP_mpz_set_si(mpz_t x, const int32_t y);
+SLIP_info SLIP_mpq_set_si (mpq_t x, const int64_t y, const uint64_t z) ;
 
-#if 0
-/* This function is currently unused, but kept here for future reference. */
-SLIP_info SLIP_mpz_set_d(mpz_t x, const double y);
+SLIP_info SLIP_mpq_set_num (mpq_t x, const mpz_t y) ;
 
-SLIP_info SLIP_mpz_get_d(double *x, const mpz_t y) ;
-#endif
+SLIP_info SLIP_mpq_set_den (mpq_t x, const mpz_t y) ;
 
-SLIP_info SLIP_mpz_set_q(mpz_t x, const mpq_t y) ;
+SLIP_info SLIP_mpq_get_den (mpz_t x, const mpq_t y) ;
 
-SLIP_info SLIP_mpz_mul(mpz_t a, const mpz_t b, const mpz_t c) ;
+SLIP_info SLIP_mpq_get_d (double *x, const mpq_t y) ;
 
-#if 0
-/* This function is currently unused, but kept here for future reference. */
-SLIP_info SLIP_mpz_add(mpz_t a, const mpz_t b, const mpz_t c);
+SLIP_info SLIP_mpq_abs (mpq_t x, const mpq_t y) ;
 
-SLIP_info SLIP_mpz_addmul(mpz_t x, const mpz_t y, const mpz_t z) ;
-#endif
+SLIP_info SLIP_mpq_add (mpq_t x, const mpq_t y, const mpq_t z) ;
 
-SLIP_info SLIP_mpz_submul(mpz_t x, const mpz_t y, const mpz_t z);
+SLIP_info SLIP_mpq_mul (mpq_t x, const mpq_t y, const mpq_t z) ;
 
-SLIP_info SLIP_mpz_divexact(mpz_t x, const mpz_t y, const mpz_t z) ;
+SLIP_info SLIP_mpq_div (mpq_t x, const mpq_t y, const mpq_t z) ;
 
-SLIP_info SLIP_mpz_gcd(mpz_t x, const mpz_t y, const mpz_t z) ;
+SLIP_info SLIP_mpq_cmp (int *r, const mpq_t x, const mpq_t y) ;
 
-SLIP_info SLIP_mpz_lcm(mpz_t lcm, const mpz_t x, const mpz_t y) ;
-
-SLIP_info SLIP_mpz_abs(mpz_t x, const mpz_t y) ;
-
-SLIP_info SLIP_mpz_cmp(int32_t *r, const mpz_t x, const mpz_t y) ;
-
-SLIP_info SLIP_mpz_cmpabs(int32_t *r, const mpz_t x, const mpz_t y) ;
-
-SLIP_info SLIP_mpz_cmp_ui(int32_t *r, const mpz_t x, const uint64_t y) ;
-
-SLIP_info SLIP_mpz_sgn(int32_t *sgn, const mpz_t x) ;
-
-SLIP_info SLIP_mpz_sizeinbase(uint64_t *size, const mpz_t x, int32_t base) ;
-
-SLIP_info SLIP_mpq_init(mpq_t x) ;
-
-SLIP_info SLIP_mpq_set(mpq_t x, const mpq_t y);
-
-SLIP_info SLIP_mpq_set_z(mpq_t x, const mpz_t y);
-
-SLIP_info SLIP_mpq_set_d(mpq_t x, const double y) ;
-
-SLIP_info SLIP_mpq_set_ui(mpq_t x, const uint64_t y, const uint64_t z);
-
-SLIP_info SLIP_mpq_set_num(mpq_t x, const mpz_t y) ;
-
-SLIP_info SLIP_mpq_set_den(mpq_t x, const mpz_t y);
-
-SLIP_info SLIP_mpq_get_den(mpz_t x, const mpq_t y) ;
-
-SLIP_info SLIP_mpq_get_d(double *x, const mpq_t y) ;
-
-SLIP_info SLIP_mpq_abs(mpq_t x, const mpq_t y) ;
-
-SLIP_info SLIP_mpq_add(mpq_t x, const mpq_t y, const mpq_t z) ;
-
-SLIP_info SLIP_mpq_mul(mpq_t x, const mpq_t y, const mpq_t z) ;
-
-SLIP_info SLIP_mpq_div(mpq_t x, const mpq_t y, const mpq_t z) ;
-
-SLIP_info SLIP_mpq_cmp(int32_t *r, const mpq_t x, const mpq_t y) ;
-
-SLIP_info SLIP_mpq_cmp_ui(int32_t *r, const mpq_t x,
+SLIP_info SLIP_mpq_cmp_ui (int *r, const mpq_t x,
                     const uint64_t num, const uint64_t den) ;
 
-SLIP_info SLIP_mpq_equal(int32_t *r, const mpq_t x, const mpq_t y) ;
+SLIP_info SLIP_mpq_sgn (int *sgn, const mpq_t x) ;
 
-SLIP_info SLIP_mpfr_init2(mpfr_t x, const uint64_t size ) ;
+SLIP_info SLIP_mpq_equal (int *r, const mpq_t x, const mpq_t y) ;
+
+SLIP_info SLIP_mpfr_init2(mpfr_t x, const uint64_t size) ;
+
+SLIP_info SLIP_mpfr_set (mpfr_t x, const mpfr_t y, const mpfr_rnd_t rnd) ;
+
+SLIP_info SLIP_mpfr_set_d (mpfr_t x, const double y, const mpfr_rnd_t rnd) ;
+
+SLIP_info SLIP_mpfr_set_si (mpfr_t x, int64_t y, const mpfr_rnd_t rnd) ;
+
+SLIP_info SLIP_mpfr_set_q (mpfr_t x, const mpq_t y, const mpfr_rnd_t rnd) ;
+
+SLIP_info SLIP_mpfr_set_z (mpfr_t x, const mpz_t y, const mpfr_rnd_t rnd) ;
+
+SLIP_info SLIP_mpfr_get_z (mpz_t x, const mpfr_t y, const mpfr_rnd_t rnd) ;
+
+SLIP_info SLIP_mpfr_get_q (mpq_t x, const mpfr_t y, const mpfr_rnd_t rnd) ;
+
+SLIP_info SLIP_mpfr_get_d (double *x, const mpfr_t y, const mpfr_rnd_t rnd) ;
+
+SLIP_info SLIP_mpfr_get_si (int64_t *x, const mpfr_t y, const mpfr_rnd_t rnd) ;
+
+SLIP_info SLIP_mpfr_mul (mpfr_t x, const mpfr_t y, const mpfr_t z,
+                    const mpfr_rnd_t rnd) ;
+
+SLIP_info SLIP_mpfr_mul_d (mpfr_t x, const mpfr_t y, const double z,
+                    const mpfr_rnd_t rnd) ;
+
+SLIP_info SLIP_mpfr_div_d (mpfr_t x, const mpfr_t y, const double z,
+                    const mpfr_rnd_t rnd) ;
+
+SLIP_info SLIP_mpfr_ui_pow_ui (mpfr_t x, const uint64_t y, const uint64_t z,
+                    const mpfr_rnd_t rnd) ;
+
+SLIP_info SLIP_mpfr_log2(mpfr_t x, const mpfr_t y, const mpfr_rnd_t rnd) ;
+
+SLIP_info SLIP_mpfr_sgn (int *sgn, const mpfr_t x) ;
+
+SLIP_info SLIP_mpfr_free_cache (void) ;
+
+SLIP_info SLIP_mpfr_free_str (char *str) ;
 
 #if 0
-/* This function is currently unused, but kept here for future reference. */
-SLIP_info SLIP_mpfr_set(mpfr_t x, const mpfr_t y, const mpfr_rnd_t rnd) ;
+// These functions are currently unused, but kept here for future reference.
+SLIP_info SLIP_gmp_asprintf (char **str, const char *format, ... ) ;
+SLIP_info SLIP_gmp_printf (const char *format, ... ) ;
+SLIP_info SLIP_mpfr_printf ( const char *format, ... ) ;
+SLIP_info SLIP_gmp_fprintf (FILE *fp, const char *format, ... ) ;
+SLIP_info SLIP_mpfr_fprintf (FILE *fp, const char *format, ... ) ;
+SLIP_info SLIP_mpz_set_d (mpz_t x, const double y) ;
+SLIP_info SLIP_mpz_add (mpz_t a, const mpz_t b, const mpz_t c) ;
+SLIP_info SLIP_mpz_addmul (mpz_t x, const mpz_t y, const mpz_t z) ;
 #endif
 
-SLIP_info SLIP_mpfr_set_d(mpfr_t x, const double y, const mpfr_rnd_t rnd) ;
-
-SLIP_info SLIP_mpfr_set_q(mpfr_t x, const mpq_t y, const mpfr_rnd_t rnd ) ;
-
-SLIP_info SLIP_mpfr_set_z(mpfr_t x, const mpz_t y, const mpfr_rnd_t rnd ) ;
-
-SLIP_info SLIP_mpfr_get_z(mpz_t x, const mpfr_t y, const mpfr_rnd_t rnd) ;
-
-SLIP_info SLIP_mpfr_get_d(double *x, const mpfr_t y, const mpfr_rnd_t rnd) ;
-
-SLIP_info SLIP_mpfr_mul(mpfr_t x, const mpfr_t y, const mpfr_t z,
-                    const mpfr_rnd_t rnd) ;
-
-SLIP_info SLIP_mpfr_mul_d(mpfr_t x, const mpfr_t y, const double z,
-                    const mpfr_rnd_t rnd) ;
-
-SLIP_info SLIP_mpfr_div_d(mpfr_t x, const mpfr_t y, const double z,
-                    const mpfr_rnd_t rnd) ;
-
-SLIP_info SLIP_mpfr_ui_pow_ui(mpfr_t x, const uint64_t y, const uint64_t z,
-                    const mpfr_rnd_t rnd) ;
-
-SLIP_info SLIP_mpfr_log2(mpfr_t x, const mpfr_t y, const mpfr_rnd_t rnd );
-
-SLIP_info SLIP_mpfr_free_cache(void);
-
 #endif
+

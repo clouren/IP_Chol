@@ -25,10 +25,11 @@
  */
 int IP_Up_Chol_Factor         // performs the Up looking Cholesky factorization
 (
-    SLIP_sparse* A,           // matrix to be factored
-    SLIP_sparse* L,           // lower triangular matrix
-    Sym_chol* S,           // Permutation, elimination tree etc
-    mpz_t* rhos,           // sequence of pivots
+    SLIP_matrix* A,           // matrix to be factored
+    SLIP_matrix** L_handle,           // lower triangular matrix
+    Sym_chol * S,           // stores guess on nnz and column permutation
+    SLIP_matrix ** rhos_handle, // sequence of pivots
+    int** pinv_handle,             // inverse row permutation
     SLIP_options* option// command options
 )
 {
@@ -38,6 +39,19 @@ int IP_Up_Chol_Factor         // performs the Up looking Cholesky factorization
     {
         return SLIP_INCORRECT_INPUT;
     }
+    
+    int64_t anz = SLIP_matrix_nnz (A, option) ;
+
+    if (!L_handle  || !rhos_handle || !pinv_handle || !S || anz < 0)
+    {
+        return SLIP_INCORRECT_INPUT;
+    }
+
+    (*L_handle) = NULL ;
+    (*rhos_handle) = NULL ;
+    (*pinv_handle) = NULL ;
+    
+    
     //--------------------------------------------------------------------------
     // Declare and initialize workspace 
     //--------------------------------------------------------------------------
@@ -50,9 +64,8 @@ int IP_Up_Chol_Factor         // performs the Up looking Cholesky factorization
     int* xi = NULL;
     int32_t* post = NULL;
     int32_t* c = NULL;
-    mpz_t sigma; SLIP_MPZ_SET_NULL(sigma);
-    mpfr_t temp; SLIP_MPFR_SET_NULL(temp);
-    mpz_t* x = NULL;
+    SLIP_matrix* x = NULL;
+
     
     // History vector
     h = (int32_t*) SLIP_malloc(n* sizeof(int32_t));
@@ -76,51 +89,27 @@ int IP_Up_Chol_Factor         // performs the Up looking Cholesky factorization
     S->cp = (int32_t*) SLIP_malloc( (n+1)*sizeof(int32_t));
     S->lnz = IP_cumsum_chol(S->cp, c, n);    // Get column pointers for L
    
+     //--------------------------------------------------------------------------
+    // allocate and initialize the workspace x
     //--------------------------------------------------------------------------
-    // Get most dense column and max of A 
-    //--------------------------------------------------------------------------
-    // Initialize sigma
-    OK(SLIP_mpz_init(sigma)); 
-    OK(SLIP_mpz_set(sigma,A->x[0]));
-    
-    // Get sigma = max(A)
-    for (i = 1; i < A->nz; i++)
-    {
-        if(mpz_cmpabs(sigma,A->x[i]) < 0)
-        {
-            OK(SLIP_mpz_set(sigma,A->x[i]));
-        }
-    }
-    // sigma = |sigma|
-    mpz_abs(sigma,sigma);
 
-    int gamma = A->p[1];
-    // get gamma as most dense column
-    for (i = 1; i<n; i++)
-    {
-        if( gamma < A->p[i+1] - A->p[i])
-            gamma = A->p[i+1]-A->p[i];
-    }
-    OK(SLIP_mpfr_init2(temp, 256)); 
-    // temp = sigma
-    OK(SLIP_mpfr_set_z(temp, sigma, MPFR_RNDN));
+    // SLIP LU utilizes arbitrary sized integers which can grow beyond the
+    // default 64 bits allocated by GMP. If the integers frequently grow, GMP
+    // can get bogged down by performing intermediate reallocations. Instead,
+    // we utilize a larger estimate on the workspace x vector so that computing
+    // the values in L and U do not require too many extra intemediate calls to
+    // realloc.
+    //
+    // Note that the estimate presented here is not an upper bound nor a lower
+    // bound.  It is still possible that more bits will be required which is
+    // correctly handled internally.
+    int64_t estimate = 64 * SLIP_MAX (2, ceil (log2 ((double) n))) ;
 
-    //--------------------------------------------------------------------------
-    // Bound = gamma*log2(sigma sqrt(gamma))
-    //--------------------------------------------------------------------------
-    // temp = sigma*sqrt(gamma)
-    OK(SLIP_mpfr_mul_d(temp, temp, (double) sqrt(gamma), MPFR_RNDN));
-    // temp = log2(temp)
-    OK(SLIP_mpfr_log2(temp, temp, MPFR_RNDN));
-    // inner2 = temp
-    double inner2 = mpfr_get_d(temp, MPFR_RNDN);
-    // Free cache from log2
-    mpfr_free_cache();
-    // bound = gamma * inner2+1
-    int bound = (int) ceil(gamma*(inner2+1));
-    // Ensure bound is at least 64 bit
-    if (bound < 64) bound = 64;    
-    // Free memory
+    // Create x, a global dense mpz_t matrix of dimension n*1. Unlike rhos, the
+    // second boolean parameter is set to false to avoid initializing
+    // each mpz entry of x with default size.  It is intialized below.
+    SLIP_CHECK (SLIP_matrix_allocate(&x, SLIP_DENSE, SLIP_MPZ, n, 1, n,
+        false, /* do not initialize the entries of x: */ false, option));
     
     
 
@@ -128,7 +117,6 @@ int IP_Up_Chol_Factor         // performs the Up looking Cholesky factorization
     // Declare memory for x, L 
     //--------------------------------------------------------------------------
     // Initialize x
-    x = IP_create_mpz_array2(n,bound);
     if (!x)
     {
         FREE_WORKSPACE;
@@ -136,38 +124,15 @@ int IP_Up_Chol_Factor         // performs the Up looking Cholesky factorization
     }
     
     // Allocate L  
-    OK(IP_sparse_alloc2(L, n, n, S->lnz));
+    SLIP_matrix * L = NULL;
+    SLIP_matrix_allocate(&L, SLIP_CSC, SLIP_MPZ, n, n, S->lnz, false. false, option);
     for (k = 0; k < n; k++) L->p[k] = c[k] = S->cp[k];
     
-    //--------------------------------------------------------------------------
-    // Iteration 0, Set L(0,0)
-    //--------------------------------------------------------------------------
-    // x = A(:,col)
-    OK(IP_Up_get_column(A,0,x)); 
-    if (mpz_sgn(x[0]) != 0)
-    {
-        pivot = 0;
-        SLIP_mpz_set(rhos[0], x[0]);
-    }
-    else
-    {
-        pivot = SLIP_SINGULAR;
-        FREE_WORKSPACE;
-        return pivot;
-    }
-    // top: nnz in column col
-    L->i[0] = 0;
-    size = mpz_sizeinbase(x[0],2);
-    // GMP manual: Allocated size should be size+2
-    OK(SLIP_mpz_init2(L->x[0],size+2));
-    // Set L[x]
-    OK(SLIP_mpz_set(L->x[0],x[0]));
-    c[0]++;
 
     //--------------------------------------------------------------------------
-    // Iterations 1:n-1 (2:n in standard)
+    // Iterations 0:n-1 (1:n in standard)
     //--------------------------------------------------------------------------
-    for (k = 1; k < n; k++)
+    for (k = 0; k < n; k++)
     {
         // LDx = A(:,k)
         top = IP_Up_Chol_triangular_solve(L, A, k, xi, S->parent, c, rhos, h, x);
@@ -199,17 +164,17 @@ int IP_Up_Chol_Factor         // performs the Up looking Cholesky factorization
             p = c[jnew]++;
             // Place the i location of the L->nz nonzero
             L->i[p] = k;
-            size = mpz_sizeinbase(x[jnew],2);
+            size = mpz_sizeinbase(x->x.mpz[jnew],2);
             // GMP manual: Allocated size should be size+2
-            OK(SLIP_mpz_init2(L->x[p], size+2));
+            OK(SLIP_mpz_init2(L->x.mpz[p], size+2));
             // Place the x value of the L->nz nonzero
-            OK(SLIP_mpz_set(L->x[p],x[jnew]));
+            OK(SLIP_mpz_set(L->x.mpz[p],x->x.mpz[jnew]));
         }
         p = c[k]++;
         L->i[p] = k;
-        size = mpz_sizeinbase(x[k], 2);
-        OK(SLIP_mpz_init2(L->x[p], size+2));
-        OK(SLIP_mpz_set(L->x[p], x[k]));
+        size = mpz_sizeinbase(x->x.mpz[k], 2);
+        OK(SLIP_mpz_init2(L->x.mpz[p], size+2));
+        OK(SLIP_mpz_set(L->x.mpz[p], x->x.mpx[k]));
     }
     L->nz = S->lnz;
     // Finalize L->p

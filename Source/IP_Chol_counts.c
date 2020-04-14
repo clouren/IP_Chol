@@ -15,7 +15,7 @@
 
 static void init_ata 
 (
-    SLIP_sparse *AT, 
+    SLIP_matrix *AT, 
     int* post, 
     int *w, 
     int **head, 
@@ -36,7 +36,7 @@ static void init_ata
 /* Purpose: Obtain the column counts of an SPD matrix for Cholesky factorization */
 int *IP_Chol_counts 
 (
-    SLIP_sparse *A, 
+    SLIP_matrix *A, 
     int *parent, 
     int *post, 
     int ata // Parameter if we are doing A or A^T A. Setit as 0

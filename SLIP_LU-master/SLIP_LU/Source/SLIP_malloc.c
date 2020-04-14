@@ -2,29 +2,21 @@
 // SLIP_LU/SLIP_malloc: wrapper for malloc
 //------------------------------------------------------------------------------
 
-// SLIP_LU: (c) 2019, Chris Lourenco, Jinhao Chen, Erick Moreno-Centeno,
+// SLIP_LU: (c) 2019-2020, Chris Lourenco, Jinhao Chen, Erick Moreno-Centeno,
 // Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
 // SLIP_LU/License for the license.
 
 //------------------------------------------------------------------------------
 
-#include "SLIP_LU_internal.h"
+// Allocate memory space for SLIP_LU.
 
-/* Purpose: Define malloc and free for SLIP LU
- * 
- * Output arguments are not modified, returned is either a pointer to 
- * size space or a NULL pointer in the case of failure * 
- */
+#include "slip_internal.h"
 
-void* SLIP_malloc
+void *SLIP_malloc
 (
-    size_t size        // Size to alloc
+    size_t size        // size of memory space to allocate
 )
 {
-    // ensure at least one byte is malloc'd
-    if (size <= 0) {size = 1 ;}
-
-    return (SLIP_MEMORY_MALLOC (size)) ;
-
+    return (SuiteSparse_malloc (1, size)) ;
 }
 

@@ -2,27 +2,22 @@
 // SLIP_LU/SLIP_calloc: wrapper for calloc
 //------------------------------------------------------------------------------
 
-// SLIP_LU: (c) 2019, Chris Lourenco, Jinhao Chen, Erick Moreno-Centeno,
+// SLIP_LU: (c) 2019-2020, Chris Lourenco, Jinhao Chen, Erick Moreno-Centeno,
 // Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
 // SLIP_LU/License for the license.
 
 //------------------------------------------------------------------------------
 
-# include "SLIP_LU_internal.h"
+// Allocate and initialize memory space for SLIP_LU.
 
-/* 
- * Purpose: calloc space of size n*size
- * on failure, NULL is returned
- */
+#include "slip_internal.h"
 
-void* SLIP_calloc
+void *SLIP_calloc
 (
-    size_t n,          // Size of array
-    size_t size        // Size to alloc
+    size_t nitems,      // number of items to allocate
+    size_t size         // size of each item
 )
 {
-    // ensure at least one byte is calloc'd
-    if (n <= 0) {n = 1 ;}
-    if (size <= 0) {size = 1 ;}
-    return (SLIP_MEMORY_CALLOC (n, size)) ;
+    return (SuiteSparse_calloc (nitems, size)) ;
 }
+

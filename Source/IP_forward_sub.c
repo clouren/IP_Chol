@@ -31,9 +31,9 @@
 
 SLIP_info IP_forward_sub
 (
-    SLIP_sparse *L,   // lower triangular matrix
-    mpz_t **x,        // right hand side matrix of size n*numRHS
-    mpz_t *rhos,      // sequence of pivots used in factorization
+    SLIP_matrix *L,   // lower triangular matrix
+    SLIP_matrix *x,        // right hand side matrix of size n*numRHS
+    SLIP_matrix *rhos,      // sequence of pivots used in factorization
     int32_t numRHS    // number of columns in x
 )
 {
@@ -75,7 +75,7 @@ SLIP_info IP_forward_sub
         {
             p = h[i][k];
             // If x[i][k] = 0, can skip operations and continue to next i
-            OK(SLIP_mpz_sgn(&sgn, x[i][k]));
+            OK(SLIP_mpz_sgn(&sgn, SLIP_2D(x, i, k, mpz)));
             if (sgn == 0) {continue;}
 
             //------------------------------------------------------------------
@@ -84,11 +84,13 @@ SLIP_info IP_forward_sub
             if (p < i-1)
             {
                 // x[i] = x[i] * rhos[i-1]
-                OK(SLIP_mpz_mul(x[i][k], x[i][k], rhos[i-1]));
+                OK(SLIP_mpz_mul( SLIP_2D(x, i, k, mpz), SLIP_2D(x, i, k, mpz),
+                                 rhos->x.mpz[i-1]));
                 // x[i] = x[i] / rhos[p]
                 if (p > -1)
                 {
-                    OK(SLIP_mpz_divexact(x[i][k], x[i][k], rhos[p]));
+                    OK(SLIP_mpz_divexact( SLIP_2D(x, i, k, mpz), SLIP_2D(x, i, k, mpz),
+                                          rhos->x.mpz[p]));
                 }
             }
 
@@ -101,24 +103,23 @@ SLIP_info IP_forward_sub
                 // Location of Lmi
                 mnew = L->i[m];
                 // skip if Lx[m] is zero
-                OK(SLIP_mpz_sgn(&sgn, L->x[m]));
+                OK(SLIP_mpz_sgn(&sgn, L->x.mpz[m]));
                 if (sgn == 0) {continue;}
                 // m > i
                 if (mnew > i)
                 {
                     p = h[mnew][k];
                     // x[mnew] is zero
-                    OK(SLIP_mpz_sgn(&sgn, x[mnew][k]));
+                    OK(SLIP_mpz_sgn(&sgn, SLIP_2D(x, mnew, k, mpz)));
                     if (sgn == 0)
                     {
                         // x[m] = x[m] - lmi xi
-                        OK(SLIP_mpz_submul(x[mnew][k], L->x[m],
-                            x[i][k]));
+                        OK(SLIP_mpz_submul( SLIP_2D(x, mnew, k, mpz), L->x.mpz[m],
+                                            SLIP_2D(x, i, k, mpz)));
                         // x[m] = x[m] / rhos[i-1]
                         if (i > 0)
                         {
-                            OK(SLIP_mpz_divexact(x[mnew][k],
-                                x[mnew][k], rhos[i - 1]));
+                            OK(SLIP_mpz_divexact( SLIP_2D(x, mnew, k, mpz), SLIP_2D(x, mnew, k, mpz), rhos->x.mpz[i-1]));
                         }
                     }
                     else
@@ -127,26 +128,25 @@ SLIP_info IP_forward_sub
                         if (p < i-1)
                         {
                             // x[m] = x[m] * rhos[i-1]
-                            OK(SLIP_mpz_mul(x[mnew][k], x[mnew][k],
-                                    rhos[i - 1]));
+                            OK(SLIP_mpz_mul( SLIP_2D(x, mnew, k, mpz), SLIP_2D(x, mnew, k, mpz),
+                                             rhos->x.mpz[i-1]));
                             // x[m] = x[m] / rhos[p]
                             if (p > -1)
                             {
-                                OK(SLIP_mpz_divexact(x[mnew][k],
-                                    x[mnew][k], rhos[p]));
+                                OK(SLIP_mpz_divexact( SLIP_2D(x, mnew, k, mpz), SLIP_2D(x, mnew, k, mpz),
+                                                      rhos->x.mpz[p]));
                             }
                         }
                         // x[m] = x[m] * rhos[i]
-                        OK(SLIP_mpz_mul(x[mnew][k], x[mnew][k],
-                            rhos[i]));
+                        OK(SLIP_mpz_mul( SLIP_2D(x, mnew, k, mpz), SLIP_2D(x, mnew, k, mpz),
+                                         rhos->x.mpz[i]));
                         // x[m] = x[m] - lmi xi
-                        OK(SLIP_mpz_submul(x[mnew][k], L->x[m],
-                            x[i][k]));
+                        OK(SLIP_mpz_submul( SLIP_2D(x, mnew, k, mpz), L->x.mpz[m], SLIP_2D(x, i, k, mpz)));
                         // x[m] = x[m] / rhos[i-1]
                         if (i > 0)
                         {
-                            OK(SLIP_mpz_divexact(x[mnew][k],
-                                x[mnew][k], rhos[i - 1]));
+                            OK(SLIP_mpz_divexact( SLIP_2D(x, mnew, k, mpz), SLIP_2D(x, mnew, k, mpz), 
+                                                  rhos->x.mpz[i-1]));
                         }
                     }
                     h[mnew][k] = i;

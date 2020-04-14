@@ -11,13 +11,13 @@
 
 #define FREE_WORKSPACE                  \
 {                                       \
-    SLIP_delete_sparse(&A);             \
-    SLIP_delete_sparse(&L);             \
-    SLIP_delete_sparse(&A2);            \
+    SLIP_matrix_free(&A,NULL);          \
+    SLIP_matrix_free(&L,NULL);          \
+    SLIP_matrix_free(&A2,NULL);         \
     SLIP_FREE(pinv2);                   \
-    SLIP_delete_dense(&b);              \
-    SLIP_delete_mpz_array(&rhos,n);     \
-    SLIP_delete_mpq_mat(&x,n,1);        \
+    SLIP_matrix_free(&b,NULL);          \
+    SLIP_matrix_free(&rhos,NULL);       \
+    SLIP_matrix_free(&x,NULL);          \
     SLIP_FREE(option);                  \
     SLIP_FREE(pinv);                    \
     SLIP_delete_LU_analysis(&S);        \
@@ -57,16 +57,15 @@ int main( int argc, char* argv[] )
     int n = 0, check, ok, j, index, k, nz = 0;
    
     SLIP_LU_analysis* S = NULL;
-    mpz_t** b2 = NULL;
-    mpz_t* rhos = NULL;
+    SLIP_matrix *A = NULL;
+    SLIP_matrix *L = NULL;
+    SLIP_matrix *b = NULL;
+    SLIP_matrix *rhos = NULL;
     int* pinv = NULL;
     int* pinv2 = NULL;
-    SLIP_sparse* A2 = NULL;
+    SLIP_matrix* A2 = NULL;
     Sym_chol* S2 = NULL;
-    mpq_t** x = NULL;
-    SLIP_sparse *A = SLIP_create_sparse();
-    SLIP_sparse *L = SLIP_create_sparse();
-    SLIP_dense *b = SLIP_create_dense();
+    SLIP_matrix* x = NULL;
     
     // Default options. May be changed in SLIP_LU_config.h
     SLIP_options *option = SLIP_create_default_options();
@@ -92,46 +91,27 @@ int main( int argc, char* argv[] )
         return 0;
     }
     
-    int32_t* I_in, *J_in;
-    double* x_in;
-  
+    // TODO Fix this function
     DEMO_OK(IP_tripread_double(A, mat_file, &I_in, &J_in, &x_in, &n, &nz, option));
-    //------------------------------------------------------------------
-    // At this point, we have read in i, j, and x arrays and have 
-    // allocated memory for the A matrix. The i & j are stored as 
-    // int32_t and x is stored as a double array. We conclude by using the
-    // appropriate SLIP_build_* to construct our input matrix A
-    //------------------------------------------------------------------
-    fclose(mat_file);
-    DEMO_OK(SLIP_build_sparse_trip_double(A, I_in, J_in, x_in, n, nz, option));
-    
-    SLIP_FREE(I_in); SLIP_FREE(J_in); SLIP_FREE(x_in);
-    A->n = n;
     
     // For this code, we utilize a vector of all ones as the RHS vector    
-    b2 = SLIP_create_mpz_mat(n,1);
+    SLIP_matrix_allocate(&b, SLIP_DENSE, SLIP_MPZ, n, 1, n, false, true, option);
     pinv = (int*) SLIP_malloc(n* sizeof(int));
-    rhos = SLIP_create_mpz_array(n);
     // Create RHS
     for (int k = 0; k < n; k++)
-        OK(SLIP_mpz_set_ui(b2[k][0],1));
-    
-    DEMO_OK(SLIP_build_dense_mpz(b, b2, n, 1));
-    SLIP_delete_mpz_mat(&b2, n, 1);
+        OK(SLIP_mpz_set_ui(b->x.mpz[k],1));
     
     //--------------------------------------------------------------------------
     // Perform Ordering of A
     //--------------------------------------------------------------------------
     clock_t start_col = clock();
-    
-    S = SLIP_create_LU_analysis(n+1);
-    
+        
     // Symmetric ordering of A. Uncomment the desired one, AMD is recommended
     //option->order = SLIP_NO_ORDERING;  // No ordering
     option->order = SLIP_AMD;  // AMD
     //option->order = SLIP_COLAMD; // COLAMD
         
-    DEMO_OK(SLIP_LU_analyze(S, A, option));
+    DEMO_OK(SLIP_LU_analyze(&S, A, option));
     
     clock_t end_col = clock();
     
@@ -159,7 +139,7 @@ int main( int argc, char* argv[] )
         index = S->q[k];
         pinv2[index] = k;
     }
-    
+    // TODO no return argument, fixme
     A2 = IP_Chol_permute_A(A, pinv2, S);
     
     //--------------------------------------------------------------------------
@@ -167,6 +147,8 @@ int main( int argc, char* argv[] )
     //--------------------------------------------------------------------------
     clock_t start_factor = clock();
     
+    // FIXME should be
+    //OK(IP_Left_Chol_Factor(A2, &L, &S2, &rhos, &pinv, option));
     S2 = (Sym_chol*) SLIP_malloc(1* sizeof(Sym_chol));
     OK(IP_Left_Chol_Factor(A2, L, S2, rhos, pinv, option));
         
@@ -177,7 +159,7 @@ int main( int argc, char* argv[] )
     // Solve linear system
     //--------------------------------------------------------------------------
     clock_t start_solve = clock();
-    
+    // FIXME, mimic SLIP LU
     x = SLIP_create_mpq_mat(n, 1);
     DEMO_OK(IP_Solve(x, b->x, rhos, L, pinv2, option, 1));
     
