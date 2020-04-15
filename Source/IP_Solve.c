@@ -37,7 +37,6 @@ SLIP_info IP_Solve               //solves the lint64_t*ear system LD^(-1)L' x = 
     SLIP_matrix *x2 = NULL;  // unpermuted solution
     SLIP_matrix *b2 = NULL;  // permuted b
     
-    
     // Permuted b
     SLIP_matrix_copy(&b2, SLIP_DENSE, SLIP_MPZ, b, option);
     for (k = 0; k < b->n; k++)
@@ -64,7 +63,6 @@ SLIP_info IP_Solve               //solves the lint64_t*ear system LD^(-1)L' x = 
         }
     }
     
-    
     // U b2 = b2
     OK(IP_Chol_ltsolve(L, b2));
     
@@ -83,7 +81,7 @@ SLIP_info IP_Solve               //solves the lint64_t*ear system LD^(-1)L' x = 
             // Set x2[i] = x[i]
             OK(SLIP_mpq_set_num( SLIP_2D(x, i, k, mpq), SLIP_2D(b2, i, k, mpz)));
             // x2[i] = x2[i] / det2
-            OK(SLIP_mpq_div( SLIP_2D(x, i, k, mpq), SLIP_2D(b2, i, k, mpq), det2));
+            OK(SLIP_mpq_div( SLIP_2D(x, i, k, mpq), SLIP_2D(x, i, k, mpq), det2));
         }
     }
     

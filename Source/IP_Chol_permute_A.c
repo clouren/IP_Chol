@@ -21,7 +21,7 @@ SLIP_info IP_Chol_permute_A
     SLIP_info ok;
     int64_t nz = 0, j, n = A->n;
     SLIP_matrix* A2 = NULL;
-    SLIP_matrix_allocate(&A2, SLIP_CSC, SLIP_MPZ, n, n, A->nz, false, true, NULL);
+    SLIP_matrix_allocate(&A2, SLIP_CSC, SLIP_MPZ, n, n, A->p[A->n], false, true, NULL);
 
     OK(SLIP_mpq_set(A2->scale, A->scale));
     if (ok != SLIP_OK)

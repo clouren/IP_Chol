@@ -22,7 +22,7 @@ SLIP_info IP_transpose
     SLIP_info ok;
     int64_t* w = NULL;
     SLIP_matrix* C = NULL;
-    SLIP_matrix_allocate(&C, SLIP_CSC, SLIP_MPZ, A->n, A->m, A->nz, false, true, NULL);
+    SLIP_matrix_allocate(&C, SLIP_CSC, SLIP_MPZ, A->n, A->m, A->p[A->n], false, true, NULL);
     int64_t p, q, j, n, m;
     m = A->m ; n = A->n ; 
     w = (int64_t*) SLIP_malloc(m* sizeof(int64_t));

@@ -34,33 +34,31 @@ SLIP_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular so
 {
     SLIP_info ok;
     if (!L || !A || !xi || !rhos || !h || !x)
+    {
         return SLIP_INCORRECT_INPUT;
+    }
     int64_t j, jnew, i, inew, p, m, top, n, col;
 
     //--------------------------------------------------------------------------
     // Initialize REF TS by getting nonzero patern of x && obtaining A(:,k)
     //--------------------------------------------------------------------------
     n = A->n;                                // Size of matrix and the dense vectors
-   
     /* Chol_ereach gives the nonzeros located in L(k,:) upon completion
      * the vector xi contains the indices of the first k-1 nonzeros in column
      * k of L 
      */
     top = IP_Chol_ereach(A, k, parent, xi, c);
-    
     j = top; // Store where the first k-1 nonzeros end
-    
     // Populate the rest of the nonzero pattern
     for (i = L->p[k]; i < L->p[k+1]; i++)
     {
         top -= 1;           // One more nonzero in column k
         xi[top] = L->i[i];  // Index of the new nonzero
     }
-    
     // Reset the array
     for (i = top; i < n; i++)
     {
-        SLIP_mpz_set(x->x.mpz[i], 0);
+        SLIP_mpz_set_ui(x->x.mpz[i], 0);
     }
     
     // Now we obtain the values of the first k-1 entries of x

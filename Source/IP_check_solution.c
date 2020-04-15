@@ -31,7 +31,7 @@ SLIP_info IP_check_solution
     // check int64_t*puts
     //--------------------------------------------------------------------------
 
-    SLIP_info ok, info ;
+    SLIP_info ok, info = SLIP_OK ;
     //SLIP_REQUIRE (A, SLIP_CSC,   SLIP_MPZ) ;
     //SLIP_REQUIRE (x, SLIP_DENSE, SLIP_MPQ) ;
     //SLIP_REQUIRE (b, SLIP_DENSE, SLIP_MPZ) ;

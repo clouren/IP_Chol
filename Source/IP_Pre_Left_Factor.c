@@ -14,7 +14,7 @@
 SLIP_info IP_Pre_Left_Factor         // performs the Up lookint64_t*g Cholesky factorization
 (
     SLIP_matrix* A,
-    SLIP_matrix* L,              // partial L matrix
+    SLIP_matrix** L_handle,              // partial L matrix
     int64_t*  xi,                  // nonzero pattern vector
     int64_t*  parent,              // Elimint64_t*ation tree
     Sym_chol * S,           // stores guess on nnz and column permutation
@@ -23,7 +23,7 @@ SLIP_info IP_Pre_Left_Factor         // performs the Up lookint64_t*g Cholesky f
 {
     SLIP_info ok;
     // Input check/
-    if (!L || !xi || !parent)
+    if (!L_handle || !xi || !parent)
         return SLIP_INCORRECT_INPUT;
     
     int64_t  top, k, i, j, jnew, n = A->n;
@@ -32,6 +32,7 @@ SLIP_info IP_Pre_Left_Factor         // performs the Up lookint64_t*g Cholesky f
     //--------------------------------------------------------------------------
        
     // Allocate L  
+    SLIP_matrix* L = NULL;
     SLIP_matrix_allocate(&L, SLIP_CSC, SLIP_MPZ, n, n, S->lnz, false, false, NULL);
     for (k = 0; k < n; k++) L->p[k] = c[k] = S->cp[k];
         
@@ -62,6 +63,7 @@ SLIP_info IP_Pre_Left_Factor         // performs the Up lookint64_t*g Cholesky f
     }
     L->nz = S->lnz;
     // Fint64_t*alize L->p
-    L->p[n] = L->nz;        
+    L->p[n] = L->nz;    
+    (*L_handle) = L;
     return SLIP_OK;
 }

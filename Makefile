@@ -1,28 +1,33 @@
 default: all
 
-include ./SuiteSparse_config/SuiteSparse_config.mk
-
-# CF = $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -O
-I = -I./Include -I./Source -I./SLIP_LU-master/SuiteSparse_config -I./SLIP_LU-master/COLAMD/Include -I./SLIP_LU-master/AMD/Include -I./SLIP_LU-master/SLIP_LU/Include -I./SLIP_LU-master/SLIP_LU/Source -I./SLIP_LU-master/SLIP_LU/Lib
-
-# LDFLAGS = -L../../lib
-
-LDLIBS += -lm -lgmp -lmpfr -lcolamd -lamd
-CS = ./SLIP_LU-master/SLIP_LU/Lib/libsliplu.a ./Lib/libipchol.a $(LDLIBS)
+include ./SLIP_LU-master/SuiteSparse_config/SuiteSparse_config.mk
 
 
-all: lib SLIP_Chol Up_Chol SLIP_Chol_debug Up_Chol_debug 
+#LIB_DIRS=./SLIP_LU-master/lib/
+PATH_TO_SLIP_LU=-Wl,-rpath,"./SLIP_LU-master/lib/"
+CF = $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(PATH_TO_SLIP_LU) -O
+I = -I./Include -I./Source -I./SLIP_LU-master/SuiteSparse_config -I./SLIP_LU-master/COLAMD/Include -I./SLIP_LU-master/AMD/Include -I./SLIP_LU-master/SLIP_LU/Include -I./SLIP_LU-master/SLIP_LU/Source -I./SLIP_LU-master/SLIP_LU/Lib -I./SLIP_LU-master/Include/
+
+
+
+LDLIBS += -lm -lgmp -lmpfr -lcolamd -lamd -L./SLIP_LU-master/lib/ -lsliplu
+CS = ./Lib/libipchol.a  $(LDLIBS)
+
+
+all: lib SLIP_Chol SLIP_Chol_debug #Up_Chol  Up_Chol_debug 
 	- ./SLIP_Chol
-	- ./Up_Chol
+#	- ./Up_Chol
 
 lib:
 	( cd ./Lib ; $(MAKE) )
 
 SLIP_Chol_debug: lib SLIP_Chol.c Makefile
-	$(CC) $(LDFLAGS) $(CF) $(I) -g -o SLIP_Chol_debug SLIP_Chol.c $(CS)
+	$(CC) $(LDFLAGS) $(CF) $(I) -g -o SLIP_Chol_debug SLIP_Chol.c $(CS) 
+
 
 SLIP_Chol: lib SLIP_Chol.c Makefile
-	$(CC) $(LDFLAGS) $(CF) $(I) -o SLIP_Chol SLIP_Chol.c $(CS)
+	$(CC) $(LDFLAGS) $(CF) $(I) -o SLIP_Chol SLIP_Chol.c $(CS) 
+
 
 Up_Chol_debug: lib Up_Chol.c Makefile
 	$(CC) $(LDFLAGS) $(CF) $(I) -g -o Up_Chol_debug Up_Chol.c $(CS)

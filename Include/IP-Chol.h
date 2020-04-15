@@ -478,7 +478,7 @@ SLIP_info IP_transpose
 SLIP_info IP_Pre_Left_Factor         // performs the Up looking Cholesky factorization
 (
     SLIP_matrix* A,
-    SLIP_matrix* L,              // partial L matrix
+    SLIP_matrix** L_handle,              // partial L matrix
     int64_t* xi,                  // nonzero pattern vector
     int64_t* parent,              // Elimination tree
     Sym_chol * S,           // stores guess on nnz and column permutation

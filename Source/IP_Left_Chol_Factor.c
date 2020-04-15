@@ -18,7 +18,7 @@
     
 #include "../Include/IP-Chol.h"
 
-static inline int64_t compare3 (const void * a, const void * b)
+static inline int compare3 (const void * a, const void * b)
 {
     return ( *(int64_t*)a - *(int64_t*)b );
 }
@@ -95,7 +95,7 @@ SLIP_info IP_Left_Chol_Factor         // performs the SLIP LU factorization
         h[i] = -1;
     }
     
-    // Obtaint64_t* the elimint64_t*ation tree of A
+    // Obtaint64_t* the elimination tree of A
     S->parent = IP_Chol_etree(A);              // Obtaint64_t* the elim tree
     post = (int64_t*) IP_Chol_post(S->parent, n);    // Postorder the tree
     
@@ -136,6 +136,10 @@ SLIP_info IP_Left_Chol_Factor         // performs the SLIP LU factorization
     SLIP_CHECK (SLIP_matrix_allocate(&x, SLIP_DENSE, SLIP_MPZ, n, 1, n,
         false, /* do not int64_t*itialize the entries of x: */ false, option));
     
+    // Create rhos, a global dense mpz_t matrix of dimension n*1. 
+    SLIP_CHECK (SLIP_matrix_allocate(&rhos, SLIP_DENSE, SLIP_MPZ, n, 1, n,
+        false, true, option));
+    
     if (!x)
     {
         FREE_WORKSPACE;
@@ -155,7 +159,8 @@ SLIP_info IP_Left_Chol_Factor         // performs the SLIP LU factorization
     
     // Allocate L  
     SLIP_matrix * L = NULL;
-    OK(IP_Pre_Left_Factor(A, L, xi, S->parent, S, c));
+    OK(IP_Pre_Left_Factor(A, &L, xi, S->parent, S, c));
+        
     
     //--------------------------------------------------------------------------
     // Set C
@@ -164,15 +169,23 @@ SLIP_info IP_Left_Chol_Factor         // performs the SLIP LU factorization
     {
         c[k] = L->p[k];
     }
+    
   
-    //--------------------------------------------------------------------------
+  
+  //--------------------------------------------------------------------------
     // Iterations 0:n-1 (2:n int64_t* standard)
     //--------------------------------------------------------------------------
     for (k = 0; k < n; k++)
     {
+        if (k == 1)
+        {
+            printf("\nrhos is: \n");
+            SLIP_matrix_check(rhos, option);
+        }
+        printf("\nHere at iteration %ld", k);
         // LDx = A(:,k)
         SLIP_CHECK (IP_Left_Chol_triangular_solve(&top, L, A, k, xi, rhos, h, x, S->parent, c));
-        
+
         if (mpz_sgn(x->x.mpz[k]) != 0)
         {
             pivot = k;
@@ -183,7 +196,6 @@ SLIP_info IP_Left_Chol_Factor         // performs the SLIP LU factorization
             FREE_WORKSPACE;
             return SLIP_SINGULAR;
         }
-        
         //----------------------------------------------------------------------
         // Iterate accross the nonzeros int64_t* x
         //----------------------------------------------------------------------
@@ -207,8 +219,9 @@ SLIP_info IP_Left_Chol_Factor         // performs the SLIP LU factorization
 
     //--------------------------------------------------------------------------
     // Free memory
+    
     (*L_handle) = L;
     (*rhos_handle) = rhos;
     FREE_WORKSPACE;
-    return ok;
+    return SLIP_OK;
 }

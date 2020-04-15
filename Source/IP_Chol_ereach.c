@@ -23,7 +23,7 @@ int64_t IP_Chol_ereach
 )
 {
     int64_t i, p, n, len, top ;
-    if (!A || !parent || !s || !w) return (-1) ;   /* check int64_t*puts */
+    if (!A || !parent || !s || !w) return (-1) ;   /* check inputs */
     top = n = A->n ; 
     SLIP_MARK (w, k) ;                /* mark node k as visited */
     for (p = A->p [k] ; p < A->p [k+1] ; p++)

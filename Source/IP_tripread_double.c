@@ -51,9 +51,11 @@ SLIP_info IP_tripread_double
         return (info) ;
     }
 
-    info = fscanf (file, "%"PRId64" %"PRId64" %lf\n",
+    
+    s = fscanf (file, "%"PRId64" %"PRId64" %lf\n",
         &(A->i[0]), &(A->j[0]), &(A->x.fp64[0])) ;
-    if (feof(file) || info != SLIP_OK)
+            
+    if (feof(file) || s <= 0)
     {
         printf ("premature end-of-file\n") ;
         SLIP_matrix_free(&A, option);
@@ -86,9 +88,13 @@ SLIP_info IP_tripread_double
 
     // At this point, A is a double triplet matrix. We make a copy of it with C
 
+    option->print_level = 2;
+    SLIP_matrix_check(A, option);
+    
     SLIP_matrix* C = NULL;
     SLIP_matrix_copy(&C, SLIP_CSC, SLIP_MPZ, A, option);
 
+    SLIP_matrix_check(C, option);
     // Success. Set A_handle = C and free A
 
     SLIP_matrix_free(&A, option);

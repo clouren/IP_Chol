@@ -10,7 +10,7 @@
 #include "../Include/IP-Chol.h"
 
 
-/* Purpose: Compute the elimint64_t*ation tree of A */
+/* Purpose: Compute the elimination tree of A */
 
 int64_t* IP_Chol_etree 
 (
