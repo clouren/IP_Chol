@@ -23,20 +23,21 @@
 
 #include "../Include/IP-Chol.h"
 
-int IP_determine_symmetry
+int64_t IP_determine_symmetry
 (
     SLIP_matrix* A,
-    int exhaustive
+    int64_t exhaustive
 )
 {
-    int j;
-    SLIP_sparse* T = IP_transpose(A);
+    int64_t j;
+    SLIP_matrix *T = NULL;
+    IP_transpose(&T, A);
     for (j = 0; j < A->nz; j++)
     {
         if (T->i[j] != A->i[j])
         {
             printf("\nError, matrix is not symmetric\n");
-            SLIP_delete_sparse(&T);
+            SLIP_matrix_free(&T,NULL);
             return 1;
         }
     }
@@ -46,7 +47,7 @@ int IP_determine_symmetry
         if (T->p[j] != A->p[j])
         {
             printf("\nError, matrix is not symmetric\n");
-            SLIP_delete_sparse(&T);
+            SLIP_matrix_free(&T,NULL);
             return 1;
         }
     }
@@ -56,16 +57,16 @@ int IP_determine_symmetry
         int r;
         for (j = 0; j < A->nz; j++)
         {
-            SLIP_mpz_cmp(&r, A->x[j], T->x[j]);
+            SLIP_mpz_cmp(&r, A->x.mpz[j], T->x.mpz[j]);
             if ( r != 0)
             {
                 printf("\nError, matrix is not symmetric\n");
-                SLIP_delete_sparse(&T);
+                SLIP_matrix_free(&T,NULL);
                 return 1;
             }
         }
     }
-    SLIP_delete_sparse(&T);
+    SLIP_matrix_free(&T,NULL);
     return 0;
         
 }

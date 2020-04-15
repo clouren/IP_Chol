@@ -1,5 +1,5 @@
 ///------------------------------------------------------------------------------
-// IP_Chol/IP_determine_error: Output error code for IP Chol
+// IP_Chol/IP_determint64_t*e_error: Output error code for IP Chol
 //------------------------------------------------------------------------------
 
 // IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
@@ -7,8 +7,8 @@
 
 //------------------------------------------------------------------------------
 
-/* Purpose: Determine what error occured when using IP Chol. This is used solely
- * for demo/debugging purposes.
+/* Purpose: Determint64_t*e what error occured when usint64_t*g IP Chol. This is used solely
+ * for demo/debuggint64_t*g purposes.
  */
 
 #include "../Include/IP-Chol.h"

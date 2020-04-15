@@ -10,20 +10,20 @@
 #include "../Include/IP-Chol.h"
 
 /* Purpose: post order a forest */
-int *IP_Chol_post 
+int64_t* IP_Chol_post 
 (
-    int* parent,    // Parent[j] is parent of node j in forest
-    int n           // Number of nodes in the forest
+    int64_t* parent,    // Parent[j] is parent of node j int64_t* forest
+    int64_t n           // Number of nodes int64_t* the forest
 )
 {
-    int j, k = 0, *post, *w, *head, *next, *stack ;
-    if (!parent) return (NULL) ;                               /* check inputs */
-    post = (int*) SLIP_malloc(n* sizeof(int));                 /* allocate result */
-    w = (int*) SLIP_malloc (3*n* sizeof (int)) ;               /* get workspace */
+    int64_t j, k = 0, *post, *w, *head, *next, *stack ;
+    if (!parent) return (NULL) ;                               /* check int64_t*puts */
+    post = (int64_t*) SLIP_malloc(n* sizeof(int64_t));                 /* allocate result */
+    w = (int64_t*) SLIP_malloc (3*n* sizeof (int64_t)) ;               /* get workspace */
     if (!w || !post) return (NULL) ;
     head = w ; next = w + n ; stack = w + 2*n ;
-    for (j = 0 ; j < n ; j++) head [j] = -1 ;           /* empty linked lists */
-    for (j = n-1 ; j >= 0 ; j--)            /* traverse nodes in reverse order*/
+    for (j = 0 ; j < n ; j++) head [j] = -1 ;           /* empty lint64_t*ked lists */
+    for (j = n-1 ; j >= 0 ; j--)            /* traverse nodes int64_t* reverse order*/
     {
         if (parent [j] == -1) continue ;    /* j is a root */
         next [j] = head [parent [j]] ;      /* add j to list of its parent */

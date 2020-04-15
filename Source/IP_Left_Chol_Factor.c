@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_Left_Chol_Factor: Compute the left-looking cholesky factorization of SPD matrix A
+// IP_Chol/IP_Left_Chol_Factor: Compute the left-lookint64_t*g cholesky factorization of SPD matrix A
 //------------------------------------------------------------------------------
 
 // IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
@@ -7,89 +7,102 @@
 
 //------------------------------------------------------------------------------
 
+//TODO Combine int o a single IP_Chol_factor function which has a bool int64_t*put which decides left or up
+
 #define FREE_WORKSPACE              \
-    SLIP_delete_mpz_array(&x,n);    \
+    SLIP_matrix_free(&x,option);    \
     SLIP_FREE(xi);                  \
     SLIP_FREE(h);                   \
     SLIP_FREE(c);                   \
     SLIP_FREE(post);                \
-    SLIP_MPFR_CLEAR(temp);          \
-    SLIP_MPZ_CLEAR(sigma);          \
     
 #include "../Include/IP-Chol.h"
 
-static inline int32_t compare3 (const void * a, const void * b)
+static inline int64_t compare3 (const void * a, const void * b)
 {
-    return ( *(int32_t*)a - *(int32_t*)b );
+    return ( *(int64_t*)a - *(int64_t*)b );
 }
 
 
-/* Purpose: This function performs the Left-looking IP Cholesky factorization. This factorization
+/* Purpose: This function performs the Left-lookint64_t*g IP Cholesky factorization. This factorization
  * is done via n iterations of the sparse REF triangular solve function. The
  * overall factorization is PAP = LDL
  */
-int IP_Left_Chol_Factor         // performs the SLIP LU factorization
+SLIP_info IP_Left_Chol_Factor         // performs the SLIP LU factorization
 (
     SLIP_matrix* A,           // matrix to be factored
     SLIP_matrix** L_handle,           // lower triangular matrix
     Sym_chol * S,           // stores guess on nnz and column permutation
     SLIP_matrix ** rhos_handle, // sequence of pivots
-    int** pinv_handle,             // inverse row permutation
     SLIP_options* option// command options
 )
 {
     SLIP_info ok;
     // Input check
-    if (!A || !L || !S || !rhos || !pinv || !option)
+    if (!A || !L_handle || !S || !rhos_handle || !option )
+    {
         return SLIP_INCORRECT_INPUT;
-    //--------------------------------------------------------------------------
-    // Declare and initialize workspace 
-    //--------------------------------------------------------------------------
-    int32_t n, numRealloc = 0, k = 0, top, i, j, col, loc, lnz = 0, unz = 0, pivot,
-        check, jnew;
-    long size;
-
+    }
     
-    int64_t anz = SLIP_matrix_nnz (A, option) ;
+    int64_t  anz = SLIP_matrix_nnz (A, option) ;
 
-    if (!L_handle  || !rhos_handle || !pinv_handle || !S || anz < 0)
+    if (anz < 0)
     {
         return SLIP_INCORRECT_INPUT;
     }
 
     (*L_handle) = NULL ;
     (*rhos_handle) = NULL ;
-    (*pinv_handle) = NULL ;
     
+    //--------------------------------------------------------------------------
+    // Declare and int64_t*itialize workspace 
+    //--------------------------------------------------------------------------
     
+    SLIP_matrix *rhos = NULL ;
+    int64_t  *xi = NULL ;
+    int64_t  *h = NULL ;
+    SLIP_matrix *x = NULL ;
     
-    int32_t* h = NULL;
-    int32_t* xi = NULL;
-    int32_t* c = NULL;
-    int32_t* post = NULL;
-    SLIP_matrix* x = NULL;
+    //// Begint64_t* timint64_t*g factorization
+    int64_t  n = A->n, top, i, j, k, col, loc, lnz = 0, unz = 0, pivot, jnew;
+    size_t size;
+
+    int64_t* post = NULL;
+    int64_t* c = NULL;
     
     
     n = A->n;
-    // History vector
-    h = (int32_t*) SLIP_malloc(n*sizeof(int32_t));
-    // Nonzero pattern
-    xi = (int32_t*) SLIP_malloc(2*n*sizeof(int32_t));
+    
+    // h is the history vector utilized for the sparse REF
+    // triangular solve algorithm. h serves as a global
+    // vector which is repeatedly passed int64_t*o the triangular
+    // solve algorithm
+    h = (int64_t*) SLIP_malloc(n* sizeof(int64_t));
+    
+    // xi is the global nonzero pattern vector. It stores
+    // the pattern of nonzeros of the kth column of L and U
+    // for the triangular solve.
+    xi = (int64_t*) SLIP_malloc(2*n* sizeof(int64_t));
     if (!h || !xi) 
     {
         FREE_WORKSPACE;
         return SLIP_OUT_OF_MEMORY;
-    }        
-    IP_reset_int_array(h,n);
+    }  
     
-    // Obtain the elimination tree of A
-    S->parent = IP_Chol_etree(A);              // Obtain the elim tree
-    post = IP_Chol_post(S->parent, n);    // Postorder the tree
+    // int64_t*itialize workspace history array
+    for (i = 0; i < n; i++)
+    {
+        h[i] = -1;
+    }
+    
+    // Obtaint64_t* the elimint64_t*ation tree of A
+    S->parent = IP_Chol_etree(A);              // Obtaint64_t* the elim tree
+    post = (int64_t*) IP_Chol_post(S->parent, n);    // Postorder the tree
     
     // Get the column counts of A
     c = IP_Chol_counts(A, S->parent, post, 0);
     
-    S->cp = (int32_t*) SLIP_malloc( (n+1)* sizeof(int32_t));
+    S->cp = (int64_t*) SLIP_malloc( (n+1)* sizeof(int64_t));
     
     if (!S->parent || !post || !c || !S->cp)
     {
@@ -97,43 +110,55 @@ int IP_Left_Chol_Factor         // performs the SLIP LU factorization
         return SLIP_OUT_OF_MEMORY;
     }
     
-    S->lnz = IP_cumsum_chol(S->cp, c, n);    // Get column pointers for L
+    S->lnz = IP_cumsum_chol(S->cp, c, n);    // Get column point64_t*ers for L
    
      
 
    //--------------------------------------------------------------------------
-    // allocate and initialize the workspace x
+    // allocate and int64_t*itialize the workspace x
     //--------------------------------------------------------------------------
 
-    // SLIP LU utilizes arbitrary sized integers which can grow beyond the
-    // default 64 bits allocated by GMP. If the integers frequently grow, GMP
-    // can get bogged down by performing intermediate reallocations. Instead,
-    // we utilize a larger estimate on the workspace x vector so that computing
-    // the values in L and U do not require too many extra intemediate calls to
+    // SLIP LU utilizes arbitrary sized int64_t*egers which can grow beyond the
+    // default 64 bits allocated by GMP. If the int64_t*egers frequently grow, GMP
+    // can get bogged down by performint64_t*g int64_t*ermediate reallocations. Instead,
+    // we utilize a larger estimate on the workspace x vector so that computint64_t*g
+    // the values int64_t* L and U do not require too many extra int64_t*emediate calls to
     // realloc.
     //
     // Note that the estimate presented here is not an upper bound nor a lower
     // bound.  It is still possible that more bits will be required which is
-    // correctly handled internally.
+    // correctly handled int64_t*ernally.
     int64_t estimate = 64 * SLIP_MAX (2, ceil (log2 ((double) n))) ;
 
     // Create x, a global dense mpz_t matrix of dimension n*1. Unlike rhos, the
-    // second boolean parameter is set to false to avoid initializing
-    // each mpz entry of x with default size.  It is intialized below.
+    // second boolean parameter is set to false to avoid int64_t*itializint64_t*g
+    // each mpz entry of x with default size.  It is int64_t*ialized below.
     SLIP_CHECK (SLIP_matrix_allocate(&x, SLIP_DENSE, SLIP_MPZ, n, 1, n,
-        false, /* do not initialize the entries of x: */ false, option));
+        false, /* do not int64_t*itialize the entries of x: */ false, option));
+    
+    if (!x)
+    {
+        FREE_WORKSPACE;
+        return SLIP_OUT_OF_MEMORY;
+    }
+    
+    // int64_t*itialize the entries of x
+    for (i = 0; i < n; i++)
+    {
+        // Allocate memory for entries of x
+        SLIP_CHECK(SLIP_mpz_init2(x->x.mpz[i], estimate));
+    }
 
     //--------------------------------------------------------------------------
     // Declare memory for x, L 
     //--------------------------------------------------------------------------
-    for (i = 0; i < n; i++) pinv[i] = i;
     
     // Allocate L  
     SLIP_matrix * L = NULL;
-    OK(IP_Pre_Left_Factor(A, &L, xi, S->parent, S, c));
+    OK(IP_Pre_Left_Factor(A, L, xi, S->parent, S, c));
     
     //--------------------------------------------------------------------------
-    // Iteration 0, must select pivot
+    // Set C
     //--------------------------------------------------------------------------
     for (k = 0; k < n; k++)
     {
@@ -141,34 +166,26 @@ int IP_Left_Chol_Factor         // performs the SLIP LU factorization
     }
   
     //--------------------------------------------------------------------------
-    // Iterations 0:n-1 (2:n in standard)
+    // Iterations 0:n-1 (2:n int64_t* standard)
     //--------------------------------------------------------------------------
     for (k = 0; k < n; k++)
     {
         // LDx = A(:,k)
-        top = IP_Left_Chol_triangular_solve(L, A, k, xi, rhos, pinv, h, x, S->parent, c);
-        if (top < 0)
-        {
-            FREE_WORKSPACE;
-            return top;
-        }
+        SLIP_CHECK (IP_Left_Chol_triangular_solve(&top, L, A, k, xi, rhos, h, x, S->parent, c));
+        
         if (mpz_sgn(x->x.mpz[k]) != 0)
         {
             pivot = k;
-            OK(SLIP_mpz_set(rhos[k], x[k]));
+            OK(SLIP_mpz_set(rhos->x.mpz[k], x->x.mpz[k]));
         }
         else
-            pivot = SLIP_SINGULAR;
-            
-        // Error
-        if (pivot < SLIP_OK)
         {
             FREE_WORKSPACE;
-            break;
+            return SLIP_SINGULAR;
         }
         
         //----------------------------------------------------------------------
-        // Iterate accross the nonzeros in x
+        // Iterate accross the nonzeros int64_t* x
         //----------------------------------------------------------------------
         for (j = top; j < n; j++)
         {
@@ -186,10 +203,12 @@ int IP_Left_Chol_Factor         // performs the SLIP LU factorization
             }
         }
     }
-    L->nz = S->lnz;
+    L->p[n] = S->lnz;
 
     //--------------------------------------------------------------------------
     // Free memory
+    (*L_handle) = L;
+    (*rhos_handle) = rhos;
     FREE_WORKSPACE;
     return ok;
 }

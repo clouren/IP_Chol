@@ -8,7 +8,6 @@
 //------------------------------------------------------------------------------
 
 #include "../Include/IP-Chol.h"
-
 /* Purpose: Free the Sym_Chol Structure*/
 void IP_Sym_chol_free
 (

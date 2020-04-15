@@ -135,6 +135,9 @@
 
 #include "../SLIP_LU-master/SLIP_LU/Include/SLIP_LU.h"
 #include <math.h>
+#include <time.h>
+#include <stdint.h>
+#include <inttypes.h>
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -296,10 +299,10 @@
 
 typedef struct Sym_chol
 {
-    int* pinv;      // Row permutation
-    int* parent;    // Elimination tree for Cholesky
-    int* cp;        // Column pointers for Cholesky
-    int lnz;        // Number of nonzeros in Cholesky L
+    int64_t* pinv;      // Row permutation
+    int64_t* parent;    // Elimination tree for Cholesky
+    int64_t* cp;        // Column pointers for Cholesky
+    int64_t lnz;        // Number of nonzeros in Cholesky L
 } Sym_chol;
     
     
@@ -312,15 +315,15 @@ void IP_Sym_chol_free
 /* Purpose: Permute the matrix A and return A2 = PAP */
 SLIP_info IP_Chol_permute_A
 (
-    SLIP_matrix **A2_handle // Output permuted matrix
+    SLIP_matrix **A2_handle,// Output permuted matrix
     SLIP_matrix* A,        // Initial input matrix
-    int* pinv,             // Row permutation
+    int64_t* pinv,             // Row permutation
     SLIP_LU_analysis* S    // Column permutation
 );
 
 /* Purpose: Compute the elimination tree of A */
 
-int* IP_Chol_etree 
+int64_t* IP_Chol_etree 
 (
     SLIP_matrix* A // Input matrix (must be SPD)
 );
@@ -330,65 +333,65 @@ int* IP_Chol_etree
    It finds the nonzero pattern of row k of L and uses the upper triangular 
    part of A(:,k) */
    
-int IP_Chol_ereach 
+int64_t IP_Chol_ereach 
 (
     SLIP_matrix *A,    // Matrix to be analyzed
-    int k,          // Node to start at
-    int* parent,    // ELimination Tree
-    int* s,         // Contains the nonzero pattern in s[top..n-1]
-    int* w          // Workspace array
+    int64_t k,          // Node to start at
+    int64_t* parent,    // ELimination Tree
+    int64_t* s,         // Contains the nonzero pattern in s[top..n-1]
+    int64_t* w          // Workspace array
 );
 
 /* Purpose: Depth-first search and postorder of a tree rooted at node j */
 
-int IP_Chol_tdfs 
+int64_t IP_Chol_tdfs 
 (
-    int j,      // Root node
-    int k,      
-    int* head,  // Head of list
-    int* next,  // Next node in the list
-    int* post,  // Post ordered tree
-    int* stack  // Stack of nodes
+    int64_t j,      // Root node
+    int64_t k,      
+    int64_t* head,  // Head of list
+    int64_t* next,  // Next node in the list
+    int64_t* post,  // Post ordered tree
+    int64_t* stack  // Stack of nodes
 );
 
 /* Purpose: post order a forest */
-int *IP_Chol_post 
+int64_t *IP_Chol_post 
 (
-    int* parent,    // Parent[j] is parent of node j in forest
-    int n           // Number of nodes in the forest
+    int64_t* parent,    // Parent[j] is parent of node j in forest
+    int64_t n           // Number of nodes in the forest
 );
 
 
 /* Purpose: consider A(i,j), node j in ith row subtree and return lca(jprev,j) 
    Used to determine Column counts of cholesky factor*/
-int IP_Chol_leaf 
+int64_t IP_Chol_leaf 
 (
-    int i, 
-    int j, 
-    int* first, 
-    int* maxfirst, 
-    int* prevleaf,
-    int* ancestor, 
-    int* jleaf
+    int64_t i, 
+    int64_t j, 
+    int64_t* first, 
+    int64_t* maxfirst, 
+    int64_t* prevleaf,
+    int64_t* ancestor, 
+    int64_t* jleaf
 );
 
 /* Purpose: Something*/
 static void init_ata 
 (
     SLIP_matrix *AT, 
-    int* post, 
-    int *w, 
-    int **head, 
-    int **next
+    int64_t* post, 
+    int64_t *w, 
+    int64_t **head, 
+    int64_t **next
 );
 
 /* Purpose: Something*/
-int *IP_Chol_counts 
+int64_t *IP_Chol_counts 
 (
     SLIP_matrix *A, 
-    int *parent, 
-    int *post, 
-    int ata // Parameter if we are doing A or A^T A. Setit as 0
+    int64_t *parent, 
+    int64_t *post, 
+    int64_t ata // Parameter if we are doing A or A^T A. Setit as 0
 );
 
 /* Purpose: This function performs the symmetric sparse REF triangular solve. for uplooking
@@ -400,85 +403,63 @@ SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solv
     int64_t *top_output,        // Output the beginning of nonzero pattern
     SLIP_matrix* L,              // partial L matrix
     SLIP_matrix* A,              // input matrix
-    int k,                    // iteration of algorithm
-    int* xi,                  // nonzero pattern vector
-    int* parent,              // Elimination tree
-    int* c,                   // Column pointers
+    int64_t k,                    // iteration of algorithm
+    int64_t* xi,                  // nonzero pattern vector
+    int64_t* parent,              // Elimination tree
+    int64_t* c,                   // Column pointers
     SLIP_matrix* rhos,              // sequence of pivots
-    int* h,                   // history vector
+    int64_t* h,                   // history vector
     SLIP_matrix* x                  // solution of system ==> kth column of L and U
 );
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /* Purpose: This function performs the SLIP Cholesky factorization. This factorization
  * is done via n iterations of the sparse REF triangular solve function. The
  * overall factorization is PAP = LDL
  */
-int IP_Up_Chol_Factor         // performs the Up looking Cholesky factorization
+SLIP_info IP_Up_Chol_Factor           // performs the Up looking Cholesky factorization
 (
-    SLIP_sparse* A,           // matrix to be factored
-    SLIP_sparse* L,           // lower triangular matrix
-    Sym_chol* S,           // Permutation, elimination tree etc
-    mpz_t* rhos,           // sequence of pivots
-    SLIP_options* option// command options
+    SLIP_matrix* A,             // matrix to be factored
+    SLIP_matrix** L_handle,     // lower triangular matrix
+    Sym_chol * S,               // stores guess on nnz and column permutation
+    SLIP_matrix ** rhos_handle, // sequence of pivots
+    SLIP_options* option        // command options
 );
+
 
 /* Purpose: This solves the system L'x = b for Cholesky factorization */
-int IP_Chol_ltsolve 
+SLIP_info IP_Chol_ltsolve 
 (
-    SLIP_sparse *L,    // The lower triangular matrix
-    mpz_t **x,      // Solution vector
-    int numRHS      // Number of RHS vectors
+    SLIP_matrix *L,    // The lower triangular matrix
+    SLIP_matrix *x      // Solution vector
 );
 
-/* Purpose: This function solves the linear system LD^(-1)L' x = b.*/
-int IP_Solve               //solves the linear system LD^(-1)L' x = b
+SLIP_info IP_Solve               //solves the linear system LD^(-1)L' x = b
 (
-    mpq_t** x,              // rational solution to the system
-    mpz_t** b,              // right hand side vector
-    mpz_t* rhos,            // sequence of pivots
-    SLIP_sparse* L,            // lower triangular matrix
-    int* pinv,              // row permutation
-    SLIP_options* option,// command options
-    int numRHS              // number of RHS vectors
+    // Output
+    SLIP_matrix** x_handle,     // rational solution to the system
+    // Input
+    SLIP_matrix *A,             // Input matrix
+    SLIP_matrix* b,             // right hand side vector
+    SLIP_matrix* rhos,          // sequence of pivots
+    SLIP_matrix* L,             // lower triangular matrix
+    int64_t* pinv,                  // row permutation
+    SLIP_options* option        // command options
 );
 
 /* Purpose: p [0..n] = cumulative sum of c [0..n-1], and then copy p [0..n-1] into c 
    From Tim Davis SuiteSparse */
 double IP_cumsum_chol 
 (
-    int *p, 
-    int *c, 
-    int n
+    int64_t *p, 
+    int64_t *c, 
+    int64_t n
 );
 
-
 /* Purpose: This function sets C = A' */
-SLIP_sparse* IP_transpose 
+SLIP_info IP_transpose
 (
-    SLIP_sparse *A     // Matrix to be transposed
+    SLIP_matrix **C_handle,     // C = A'
+    SLIP_matrix *A              // Matrix to be transposed
 );
 
 
@@ -494,162 +475,63 @@ SLIP_sparse* IP_transpose
  * is done via n iterations of the sparse REF triangular solve function. The
  * overall factorization is PAP = LDL
  */
-int IP_Pre_Left_Factor         // performs the Up looking Cholesky factorization
+SLIP_info IP_Pre_Left_Factor         // performs the Up looking Cholesky factorization
 (
-    SLIP_sparse* A,
-    SLIP_sparse* L,              // partial L matrix
-    int* xi,                  // nonzero pattern vector
-    int* parent,              // Elimination tree
+    SLIP_matrix* A,
+    SLIP_matrix* L,              // partial L matrix
+    int64_t* xi,                  // nonzero pattern vector
+    int64_t* parent,              // Elimination tree
     Sym_chol * S,           // stores guess on nnz and column permutation
-    int* c                   // Column pointers
+    int64_t* c                   // Column pointers
 );
-
 
 /* Purpose: This function performs the symmetric sparse REF triangular solve. i.e., 
  * (LD) x = A(:,k). 
  */
-int IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
+SLIP_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
 (
-    SLIP_sparse* L,              // partial L matrix
-    SLIP_sparse* A,              // input matrix
-    int k,                    // iteration of algorithm
-    int* xi,                  // nonzero pattern vector
-    mpz_t* rhos,              // sequence of pivots
-    int* pinv,                // inverse row permutation
-    int* h,                   // history vector
-    mpz_t* x,                  // solution of system ==> kth column of L and U
-    int* parent,
-    int* c
+    int64_t *top_output,        // Output the beginning of nonzero pattern
+    SLIP_matrix* L,              // partial L matrix
+    SLIP_matrix* A,              // input matrix
+    int64_t k,                    // iteration of algorithm
+    int64_t* xi,                  // nonzero pattern vector
+    SLIP_matrix* rhos,              // sequence of pivots
+    int64_t* h,                   // history vector
+    SLIP_matrix* x,                  // solution of system ==> kth column of L and U
+    int64_t* parent,
+    int64_t* c
 );
 
-/* Purpose: This function performs the SLIP Cholesky factorization. This factorization
+/* Purpose: This function performs the Left-looking IP Cholesky factorization. This factorization
  * is done via n iterations of the sparse REF triangular solve function. The
  * overall factorization is PAP = LDL
  */
-int IP_Left_Chol_Factor         // performs the SLIP LU factorization
+SLIP_info IP_Left_Chol_Factor         // performs the SLIP LU factorization
 (
-    SLIP_sparse* A,           // matrix to be factored
-    SLIP_sparse* L,           // lower triangular matrix
+    SLIP_matrix* A,           // matrix to be factored
+    SLIP_matrix** L_handle,           // lower triangular matrix
     Sym_chol * S,           // stores guess on nnz and column permutation
-    mpz_t* rhos,           // sequence of pivots
-    int* pinv,             // inverse row permutation
+    SLIP_matrix ** rhos_handle, // sequence of pivots
     SLIP_options* option// command options
-);
-
-/*
- * Purpose: This function allocates a SLIP LU matrix of size n*m with array size
- * nzmax. This version does not allocate individual the values in x. As a
- * result, it is more memory efficient, but also less user friendly.
- *
- * See also IP_sparse_alloc.
- */
-SLIP_info IP_sparse_alloc2
-(
-    SLIP_sparse* A, // sparse matrix data structure to be allocated
-    int32_t n,      // number of columns
-    int32_t m,      // number of rows (recall m=n assumed)
-    int32_t nzmax   // size of allocated i and x arrays
-);
-
-/* 
- * Purpose: This function allocates a SLIP LU matrix of size n*m with array
- * size nzmax. This function initializes each entry in A->x therefore they are
- * immediately ready to be operated on. This is less efficient but more user
- * friendly.
- *
- * See also IP_sparse_alloc2.
- */
-SLIP_info IP_sparse_alloc
-(
-    SLIP_sparse* A,// sparse matrix data structure to be allocated
-    int32_t n,     // number of columns
-    int32_t m,     // number of rows (recall m=n assumed)
-    int32_t nzmax  // size of allocated i and x arrays
-);
-
-/* 
- * Purpose: This function initializes an int vector of size n and sets the value
- * equal to -1. This function is used for the history and pivot vectors. 
- */
-SLIP_info IP_reset_int_array
-(
-    int32_t *h,    // int32_t vector to be reset
-    int32_t n      // size of the int32_t vector
-);
-
-/* 
- * Purpose: This function resets an int32_t vector of size n and sets each term
- * equal to -1 with nonzero pattern given. This is more efficient than resetting
- * each term individually
- */
-SLIP_info IP_reset_int_array2
-(
-    int32_t *h,    // int32_t vector to be reset
-    int32_t n,     // size of h
-    int32_t top,   // beginning of nonzero pattern
-    int32_t *xi    // nonzero pattern
-);
-
-/* 
- * Purpose: This function resets an mpz array of size n with the nonzero pattern
- * given. This is more efficient than iterating accross all nonzeros in vector x
- */
-SLIP_info IP_reset_mpz_array
-(
-    mpz_t *x,      // mpz array to be reset
-    int32_t n,     // size of x
-    int32_t top,   // beginning of the nonzero pattern
-    int32_t *xi    // nonzero pattern
-);
-
-mpz_t* IP_create_mpz_array2
-(
-    int32_t n,     // size of the array
-    int32_t size   // Relative size of numbers
-);
-
-SLIP_info IP_get_column //extract k-th column from A, i.e., x=A(:,k)
-(
-    mpz_t* x,       // A(:,k)
-    SLIP_sparse* A, // input matrix
-    int32_t k       // column to extract
 );
 
 
 SLIP_info IP_forward_sub
 (
-    SLIP_sparse *L,   // lower triangular matrix
-    mpz_t **x,        // right hand side matrix of size n*numRHS
-    mpz_t *rhos,      // sequence of pivots used in factorization
-    int32_t numRHS    // number of columns in x
-);
-
-SLIP_info IP_array_mul // multiplies vector x by the determinant of matrix
-(
-    mpz_t** x,      // matrix to be multiplied
-    mpz_t det,      // given determinant of matrix
-    int32_t n,      // size of x
-    int32_t numRHS  // number of RHS vectors
-);
-
-SLIP_info IP_array_div // divides the x vector by the determinant
-(
-    mpq_t** x2,     // solution of x/det
-    mpz_t** x,      // input vector
-    mpz_t det,      // given determinant of matrix
-    int32_t n,      // size of x and x2 
-    int32_t numRHS  // number of rhs vectors
+    SLIP_matrix *L,   // lower triangular matrix
+    SLIP_matrix *x,        // right hand side matrix of size n*numRHS
+    SLIP_matrix *rhos      // sequence of pivots used in factorization
 );
 
 /* Purpose: This processes the command line for user specified options */
 SLIP_info IP_process_command_line //processes the command line
 (
-    int32_t argc,           // number of command line arguments
+    int64_t argc,           // number of command line arguments
     char* argv[],           // set of command line arguments
     SLIP_options* option,   // struct containing the command options
     char** mat_name,        // Name of the matrix to be read in
     char** rhs_name,        // Name of the RHS vector to be read in
-    int32_t *rat            // data type of output solution.
+    int64_t *rat            // data type of output solution.
                             // 1: mpz, 2: double, 3: mpfr
 );
 
@@ -661,13 +543,8 @@ SLIP_info IP_process_command_line //processes the command line
 
 SLIP_info IP_tripread_double
 (
-    SLIP_sparse* A,        // Matrix to be populated
-    FILE* file,          // file to read from (must already be open)
-    int32_t** i,
-    int32_t** j,
-    double** x,
-    int *n,
-    int *nz,
+    SLIP_matrix **A_handle,     // Matrix to be populated
+    FILE* file,                 // file to read from (must already be open)
     SLIP_options* option
 );
 
@@ -692,10 +569,20 @@ void IP_determine_error
  * 
  */
 
-int IP_determine_symmetry
+int64_t IP_determine_symmetry
 (
-    SLIP_sparse* A,
-    int exhaustive
+    SLIP_matrix* A,
+    int64_t exhaustive
 );
+
+
+SLIP_info IP_check_solution
+(
+    const SLIP_matrix *A,         // Input matrix
+    const SLIP_matrix *x,         // Solution vectors
+    const SLIP_matrix *b,         // Right hand side vectors
+    const SLIP_options* option    // Command options
+);
+
 
 #endif

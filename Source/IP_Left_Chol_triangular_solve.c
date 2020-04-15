@@ -9,33 +9,33 @@
 
 #include "../Include/IP-Chol.h"
 
-static inline int32_t compare4 (const void * a, const void * b)
+static inline int compare4 (const void * a, const void * b)
 {
-    return ( *(int32_t*)a - *(int32_t*)b );
+    return ( *(int64_t*)a - *(int64_t*)b );
 }
 
 
 /* Purpose: This function performs the symmetric sparse REF triangular solve. i.e., 
  * (LD) x = A(:,k). 
  */
-int IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
+SLIP_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
 (
+    int64_t *top_output,        // Output the beginning of nonzero pattern
     SLIP_matrix* L,              // partial L matrix
     SLIP_matrix* A,              // input matrix
-    int k,                    // iteration of algorithm
-    int* xi,                  // nonzero pattern vector
+    int64_t k,                    // iteration of algorithm
+    int64_t* xi,                  // nonzero pattern vector
     SLIP_matrix* rhos,              // sequence of pivots
-    int* pinv,                // inverse row permutation
-    int* h,                   // history vector
+    int64_t* h,                   // history vector
     SLIP_matrix* x,                  // solution of system ==> kth column of L and U
-    int* parent,
-    int* c
+    int64_t* parent,
+    int64_t* c
 )
 {
     SLIP_info ok;
-    if (!L || !A || !xi || !rhos || !pinv || !h || !x)
+    if (!L || !A || !xi || !rhos || !h || !x)
         return SLIP_INCORRECT_INPUT;
-    int j, jnew, i, inew, p, m, top, n, col;
+    int64_t j, jnew, i, inew, p, m, top, n, col;
 
     //--------------------------------------------------------------------------
     // Initialize REF TS by getting nonzero patern of x && obtaining A(:,k)
@@ -58,8 +58,10 @@ int IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
     }
     
     // Reset the array
-    // TODO Delete me?
-    OK(IP_reset_mpz_array(x, n, top, xi));
+    for (i = top; i < n; i++)
+    {
+        SLIP_mpz_set(x->x.mpz[i], 0);
+    }
     
     // Now we obtain the values of the first k-1 entries of x
     for (i = j; i < n; i++)
@@ -77,9 +79,12 @@ int IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
             OK(SLIP_mpz_set(x->x.mpz[A->i[i]], A->x.mpz[i]));
         }
     }
-    qsort(&xi[top], n-top, sizeof(int32_t), compare4);
-    //TODO keep me?
-    OK(IP_reset_int_array2(h,n,top,xi));      // Reset h[i] = -1 for all i in nonzero pattern
+    qsort(&xi[top], n-top, sizeof(int64_t), compare4);
+    // Reset h[i] = -1 for all i in nonzero pattern
+    for (i = top; i < n; i++)
+    {
+        h[xi[i]] = -1;
+    }
         
     //--------------------------------------------------------------------------
     // Iterate accross nonzeros in x
@@ -175,5 +180,6 @@ int IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
         }
     }
     // Output the beginning of nonzero pattern
-    return top;
+    *top_output = top;
+    return SLIP_OK;
 }

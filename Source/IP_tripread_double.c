@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_tripread_double: Read in a triplet matrix
+// IP_Chol/IP_tripread_double: Read int64_t* a triplet matrix
 //------------------------------------------------------------------------------
 
 // IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
@@ -9,8 +9,8 @@
 
 #include "../Include/IP-Chol.h"
 
-/* Purpose: This function reads in a double matrix stored in a triplet format
- * This format used can be seen in any of the example mat files. 
+/* Purpose: This function reads int64_t* a double matrix stored int64_t* a triplet format
+ * This format used can be seen int64_t* any of the example mat files. 
  * 
  * This is only used for Demo purposes
  */

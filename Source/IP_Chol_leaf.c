@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_Chol_leaf: Subroutine for column counts of Cholesky
+// IP_Chol/IP_Chol_leaf: Subroutint64_t*e for column counts of Cholesky
 //------------------------------------------------------------------------------
 
 // IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
@@ -9,20 +9,20 @@
 
 #include "../Include/IP-Chol.h"
 
-/* Purpose: consider A(i,j), node j in ith row subtree and return lca(jprev,j) 
-   Used to determine Column counts of cholesky factor*/
-int IP_Chol_leaf 
+/* Purpose: consider A(i,j), node j int64_t* ith row subtree and return lca(jprev,j) 
+   Used to determint64_t*e Column counts of cholesky factor*/
+int64_t IP_Chol_leaf 
 (
-    int i, 
-    int j, 
-    int* first, 
-    int* maxfirst, 
-    int* prevleaf,
-    int* ancestor, 
-    int* jleaf
+    int64_t i, 
+    int64_t j, 
+    int64_t* first, 
+    int64_t* maxfirst, 
+    int64_t* prevleaf,
+    int64_t* ancestor, 
+    int64_t* jleaf
 )
 {
-    int q, s, sparent, jprev ;
+    int64_t q, s, sparent, jprev ;
     if (!first || !maxfirst || !prevleaf || !ancestor || !jleaf) return (-1) ;
     *jleaf = 0 ;
     if (i <= j || first [j] <= maxfirst [i]) return (-1) ;  /* j not a leaf */

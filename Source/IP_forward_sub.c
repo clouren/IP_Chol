@@ -11,7 +11,7 @@
  * essentially the same as the sparse REF triangular solve applied to each
  * column of the right hand side vectors. Like the normal one, this
  * function expects that the vector x is dense. As a result,the nonzero
- * pattern is not computed and each nonzero in x is iterated across.
+ * pattern is not computed and each nonzero int64_t* x is iterated across.
  * The system to solve is LDx = x
  *
  * On output, the mpz_t** x structure is modified
@@ -33,30 +33,30 @@ SLIP_info IP_forward_sub
 (
     SLIP_matrix *L,   // lower triangular matrix
     SLIP_matrix *x,        // right hand side matrix of size n*numRHS
-    SLIP_matrix *rhos,      // sequence of pivots used in factorization
-    int32_t numRHS    // number of columns in x
+    SLIP_matrix *rhos      // sequence of pivots used int64_t* factorization
 )
 {
     SLIP_info ok;
-    int32_t i, j, p, k, n, m, mnew, sgn, **h;
+    int64_t  i, j, p, k, n, m, mnew, **h;
     // Size of x vector
     n = L->n;
 
-    // calloc is used, so that h is initialized for SLIP_FREE_WORKSPACE
-    h = (int32_t**) SLIP_calloc(n, sizeof(int32_t*));
+    int sgn;
+    // calloc is used, so that h is int64_t*itialized for SLIP_FREE_WORKSPACE
+    h = (int64_t**) SLIP_calloc(n, sizeof(int64_t*));
     if (!h)
     {
         return SLIP_OUT_OF_MEMORY;
     }
     for (i = 0; i < n; i++)
     {
-        h[i] = (int32_t*) SLIP_malloc(numRHS* sizeof(int32_t));
+        h[i] = (int64_t*) SLIP_malloc(x->n* sizeof(int64_t));
         if (!h[i])
         {
             SLIP_FREE_WORKSPACE;
             return SLIP_OUT_OF_MEMORY;
         }
-        for (j = 0; j < numRHS; j++)
+        for (j = 0; j < x->n; j++)
         {
             h[i][j] = -1;
         }
@@ -66,15 +66,15 @@ SLIP_info IP_forward_sub
     // Iterate across each RHS vector
     //--------------------------------------------------------------------------
 
-    for (k = 0; k < numRHS; k++)
+    for (k = 0; k < x->n; k++)
     {
         //----------------------------------------------------------------------
-        // Iterate accross all nonzeros in x. Assume x is dense
+        // Iterate accross all nonzeros int64_t* x. Assume x is dense
         //----------------------------------------------------------------------
         for (i = 0; i < n; i++)
         {
             p = h[i][k];
-            // If x[i][k] = 0, can skip operations and continue to next i
+            // If x[i][k] = 0, can skip operations and contint64_t*ue to next i
             OK(SLIP_mpz_sgn(&sgn, SLIP_2D(x, i, k, mpz)));
             if (sgn == 0) {continue;}
 

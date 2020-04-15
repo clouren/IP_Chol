@@ -10,9 +10,9 @@
 #include "../Include/IP-Chol.h"
 
 
-static inline int32_t compare2 (const void * a, const void * b)
+static inline int compare2 (const void * a, const void * b)
 {
-    return ( *(int32_t*)a - *(int32_t*)b );
+    return ( *(int64_t*)a - *(int64_t*)b );
 }
 
 /* Purpose: This function performs the symmetric sparse REF triangular solve. for uplooking
@@ -21,39 +21,39 @@ static inline int32_t compare2 (const void * a, const void * b)
  */
 SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solve
 (
-    int64_t *top_output,        // Output the beginning of nonzero pattern
+    int64_t *top_output,        // Output the beginng of nonzero pattern
     SLIP_matrix* L,              // partial L matrix
     SLIP_matrix* A,              // input matrix
-    int k,                    // iteration of algorithm
-    int* xi,                  // nonzero pattern vector
-    int* parent,              // Elimination tree
-    int* c,                   // Column pointers
+    int64_t k,                    // iteration of algorithm
+    int64_t*  xi,                  // nonzero pattern vector
+    int64_t*  parent,              // Elimintaation tree
+    int64_t* c,                   // Column point64_t*ers
     SLIP_matrix* rhos,              // sequence of pivots
-    int* h,                   // history vector
+    int64_t * h,                   // history vector
     SLIP_matrix* x                  // solution of system ==> kth column of L and U
 )
 {
     SLIP_info ok;
     if (!L || !A || !xi || !parent || !c || !rhos || !h || !x)
         return SLIP_INCORRECT_INPUT;
-    int j, jnew, i, inew, p, m, top, n = A->n, col;
+    int64_t j, jnew, i, inew, p, m, top, n = A->n, col;
     
     //--------------------------------------------------------------------------
     // Initialize REF TS by getting nonzero patern of x && obtaining A(:,k)
     //--------------------------------------------------------------------------
-    top = IP_Chol_ereach(A, k, parent, xi, c);  // Obtain nonzero pattern in xi[top..n]
-    qsort(&xi[top], n-top, sizeof(int), compare2); 
+    top = IP_Chol_ereach(A, k, parent, xi, c);  // Obtaint64_t* nonzero pattern int64_t* xi[top..n]
+    qsort(&xi[top], n-top, sizeof(int64_t*), compare2); 
     
     
-    // Reset x[i] = 0 for all i in nonzero pattern xi [top..n-1]
+    // Reset x[i] = 0 for all i int64_t* nonzero pattern xi [top..n-1]
     for (i = top; i < n; i++)
     {
         SLIP_CHECK (SLIP_mpz_set_ui (x->x.mpz[xi [i]], 0)) ;
-    }s
-    OK(SLIP_mpz_set_ui(x[k], 0));                     // Reset x[k]
+    }
+    OK(SLIP_mpz_set_ui(x->x.mpz[k], 0));                     // Reset x[k]
     
     
-    // Reset h[i] = -1 for all i in nonzero pattern
+    // Reset h[i] = -1 for all i int64_t* nonzero pattern
     for (i = top; i < n; i++)
     {
         h[xi[i]] = -1;
@@ -69,13 +69,13 @@ SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solv
     }
     
     //--------------------------------------------------------------------------
-    // Iterate accross nonzeros in x
+    // Iterate accross nonzeros int64_t* x
     //--------------------------------------------------------------------------
     for (p = top; p < n; p++)
     {   
-        /* Finalize x[j] */
+        /* Fint64_t*alize x[j] */
         j = xi[p];                          // First nonzero term
-        //if (j == k) continue;             // Do not operate on x[k] in TS
+        //if (j == k) contint64_t*ue;             // Do not operate on x[k] int64_t* TS
         if (mpz_sgn(x->x.mpz[j]) == 0) continue;   // If x[j] == 0 no work must be done
                 
         // History update x[j]
@@ -92,11 +92,11 @@ SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solv
         //------------------------------------------------------------------
         // IPGE updates
         //------------------------------------------------------------------
-        // ----------- Iterate accross nonzeros in Lij ---------------------
+        // ----------- Iterate accross nonzeros int64_t* Lij ---------------------
         for (m = L->p[j] +1; m < c[j]; m++)
         {
             i = L->i[m];            // i value of Lij
-            if (i > j && i < k)     // Update all dependent x[i] excluding x[k]
+            if (i > j && i < k)     // Update all dependent x[i] excludint64_t*g x[k]
             {
                     /*************** If lij==0 then no update******************/
                 if (mpz_sgn(L->x.mpz[m]) == 0) continue;
@@ -129,11 +129,11 @@ SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solv
                 //----------------------------------------------------------
                 else
                 {
-                    // No previous pivot in this case
+                    // No previous pivot int64_t* this case
                     if (j < 1)
                     {
                         OK(SLIP_mpz_mul(x->x.mpz[i],x->x.mpz[i],rhos->x.mpz[0]));      // x[i] = x[i]*rho[0]
-                        OK(SLIP_mpz_submul(x->x.mpz[i], L->x->x.mpz[m], x->x.mpz[j]));// x[i] = x[i] - lij*xj
+                        OK(SLIP_mpz_submul(x->x.mpz[i], L->x.mpz[m], x->x.mpz[j]));// x[i] = x[i] - lij*xj
                         h[i] = j;                  // Entry is now up to date
                     }
                     // There is a previous pivot
@@ -171,7 +171,7 @@ SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solv
             OK(SLIP_mpz_divexact(x->x.mpz[k],x->x.mpz[k],rhos->x.mpz[j-1])); // x[k] = x[k] / rho[j-1] 
         h[k] = j;   
     }
-    // Finalize x[k]
+    // Fint64_t*alize x[k]
     if (h[k] < k-1)
     {
         OK(SLIP_mpz_mul(x->x.mpz[k], x->x.mpz[k], rhos->x.mpz[k-1]));
