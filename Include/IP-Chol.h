@@ -438,11 +438,13 @@ SLIP_info IP_Solve               //solves the linear system LD^(-1)L' x = b
     // Output
     SLIP_matrix** x_handle,     // rational solution to the system
     // Input
-    SLIP_matrix *A,             // Input matrix
+    SLIP_matrix *A,             // Input matrix (permuted)
+    SLIP_matrix* A_orig,        // Input matrix (unpermuted)
     SLIP_matrix* b,             // right hand side vector
     SLIP_matrix* rhos,          // sequence of pivots
     SLIP_matrix* L,             // lower triangular matrix
     int64_t* pinv,                  // row permutation
+    SLIP_LU_analysis* S,
     SLIP_options* option        // command options
 );
 

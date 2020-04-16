@@ -71,8 +71,8 @@ int main( int argc, char* argv[] )
     // Default options. May be changed in SLIP_LU_config.h
     SLIP_options *option = SLIP_create_default_options();
     
-    char* mat_name = "./ExampleMats/2.mat";// Set demo matrix and RHS name
-    char* rhs_name = "./ExampleMats/2.mat.soln";
+    char* mat_name = "./ExampleMats/1440.mat";// Set demo matrix and RHS name
+    char* rhs_name = "./ExampleMats/872.mat.soln";
     int64_t rat = 1;
     
     // Process the command line
@@ -95,14 +95,13 @@ int main( int argc, char* argv[] )
     
     DEMO_OK(IP_tripread_double(&A, mat_file, option));
     n = A->n;
-    
     // For this code, we utilize a vector of all ones as the RHS vector    
     SLIP_matrix_allocate(&b, SLIP_DENSE, SLIP_MPZ, n, 1, n, false, true, option);
     pinv = (int64_t*) SLIP_malloc(n* sizeof(int64_t));
     // Create RHS
     for (int64_t k = 0; k < n; k++)
         OK(SLIP_mpz_set_ui(b->x.mpz[k],1));
-
+    
     //--------------------------------------------------------------------------
     // Perform Ordering of A
     //--------------------------------------------------------------------------
@@ -113,9 +112,7 @@ int main( int argc, char* argv[] )
     option->order = SLIP_AMD;  // AMD
     //option->order = SLIP_COLAMD; // COLAMD
         
-    option->print_level = 2;
-    DEMO_OK(SLIP_LU_analyze(&S, A, option));
-    
+    DEMO_OK(SLIP_LU_analyze(&S, A, option));    
     clock_t end_col = clock();
     
     //--------------------------------------------------------------------------
@@ -143,6 +140,7 @@ int main( int argc, char* argv[] )
     }
     
     
+    
     DEMO_OK( IP_Chol_permute_A(&A2, A, pinv2, S));
     option->print_level = 2;
     option->check = true;
@@ -152,13 +150,26 @@ int main( int argc, char* argv[] )
     //--------------------------------------------------------------------------
     // SLIP Chol Factorization
     //--------------------------------------------------------------------------
-    
+    // FIX IT, its broken, i dont know why.
     clock_t start_factor = clock();
     
     S2 = (Sym_chol*) SLIP_malloc(1* sizeof(Sym_chol));
-    DEMO_OK( IP_Left_Chol_Factor( A2, &L, S2, &rhos, option));
+    
+    SLIP_matrix* L2 = NULL;
+    SLIP_matrix* rhos2 = NULL;
+    
+    DEMO_OK( IP_Left_Chol_Factor( A2, &L2, S2, &rhos2, option));
+    DEMO_OK( IP_Up_Chol_Factor( A2, &L, S2, &rhos, option));
+    
+//     printf("\nCorrect L is: \n");
+//     SLIP_matrix_check(L, option);
+//     
+//     printf("\nWrong L is: \n");
+//     SLIP_matrix_check(L2, option);
+    
         
 //    SLIP_matrix_check(A, option);
+//    printf("\nL is:\n");
 //    SLIP_matrix_check(L, option);
 //     
      L->m = n;
@@ -174,7 +185,7 @@ int main( int argc, char* argv[] )
     clock_t start_solve = clock();
     option->check = true;
     
-    DEMO_OK( IP_Solve( &x, A, b, rhos, L, pinv2, option));
+    DEMO_OK( IP_Solve( &x, A2, A, b, rhos, L, pinv2, S, option));
     
     
     clock_t end_solve = clock();
@@ -189,7 +200,7 @@ int main( int argc, char* argv[] )
     double t_solve =  (double) (end_solve - start_solve) / CLOCKS_PER_SEC;
 
     printf("\nNumber of L nonzeros: \t\t\t%ld",
-        (L->nz) );
+        (L->p[L->n]) );
     printf("\nSymmetry Check time: \t\t\t%lf", t_sym);
     printf("\nSymbolic analysis time: \t\t%lf", t_col);
     printf("\nLeft-Looking Chol Factorization time: \t%lf", t_factor);

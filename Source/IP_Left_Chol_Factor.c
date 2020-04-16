@@ -18,7 +18,7 @@
     
 #include "../Include/IP-Chol.h"
 
-static inline int compare3 (const void * a, const void * b)
+static inline int64_t compare3 (const void * a, const void * b)
 {
     return ( *(int64_t*)a - *(int64_t*)b );
 }
@@ -38,6 +38,7 @@ SLIP_info IP_Left_Chol_Factor         // performs the SLIP LU factorization
 )
 {
     SLIP_info ok;
+    
     // Input check
     if (!A || !L_handle || !S || !rhos_handle || !option )
     {
@@ -64,7 +65,7 @@ SLIP_info IP_Left_Chol_Factor         // performs the SLIP LU factorization
     SLIP_matrix *x = NULL ;
     
     //// Begint64_t* timint64_t*g factorization
-    int64_t  n = A->n, top, i, j, k, col, loc, lnz = 0, unz = 0, pivot, jnew;
+    int64_t  n = A->n, top, i, j, k=0, col, loc, lnz = 0, unz = 0, pivot, jnew;
     size_t size;
 
     int64_t* post = NULL;
@@ -96,8 +97,8 @@ SLIP_info IP_Left_Chol_Factor         // performs the SLIP LU factorization
     }
     
     // Obtaint64_t* the elimination tree of A
-    S->parent = IP_Chol_etree(A);              // Obtaint64_t* the elim tree
-    post = (int64_t*) IP_Chol_post(S->parent, n);    // Postorder the tree
+    S->parent = IP_Chol_etree(A);              // Obtain the elim tree
+    post = IP_Chol_post(S->parent, n);    // Postorder the tree
     
     // Get the column counts of A
     c = IP_Chol_counts(A, S->parent, post, 0);
@@ -110,9 +111,7 @@ SLIP_info IP_Left_Chol_Factor         // performs the SLIP LU factorization
         return SLIP_OUT_OF_MEMORY;
     }
     
-    S->lnz = IP_cumsum_chol(S->cp, c, n);    // Get column point64_t*ers for L
-   
-     
+    S->lnz = IP_cumsum_chol(S->cp, c, n);    // Get column pointers for L
 
    //--------------------------------------------------------------------------
     // allocate and int64_t*itialize the workspace x
@@ -167,7 +166,7 @@ SLIP_info IP_Left_Chol_Factor         // performs the SLIP LU factorization
     //--------------------------------------------------------------------------
     for (k = 0; k < n; k++)
     {
-        c[k] = L->p[k];
+        L->p[k] = c[k] = L->p[k];
     }
     
   
@@ -177,14 +176,8 @@ SLIP_info IP_Left_Chol_Factor         // performs the SLIP LU factorization
     //--------------------------------------------------------------------------
     for (k = 0; k < n; k++)
     {
-        if (k == 1)
-        {
-            printf("\nrhos is: \n");
-            SLIP_matrix_check(rhos, option);
-        }
-        printf("\nHere at iteration %ld", k);
         // LDx = A(:,k)
-        SLIP_CHECK (IP_Left_Chol_triangular_solve(&top, L, A, k, xi, rhos, h, x, S->parent, c));
+        OK (IP_Left_Chol_triangular_solve(&top, L, A, k, xi, rhos, h, x, S->parent, c));
 
         if (mpz_sgn(x->x.mpz[k]) != 0)
         {
@@ -202,7 +195,7 @@ SLIP_info IP_Left_Chol_Factor         // performs the SLIP LU factorization
         for (j = top; j < n; j++)
         {
             jnew = xi[j];
-            if (jnew >= k && ok == SLIP_OK)
+            if (jnew >= k)
             {
                 // Place the i location of the L->nz nonzero
                 size = mpz_sizeinbase(x->x.mpz[jnew],2);
@@ -214,6 +207,8 @@ SLIP_info IP_Left_Chol_Factor         // performs the SLIP LU factorization
                 lnz += 1;
             }
         }
+        //printf("\nEnd of iteration %ld L is:\n", k);
+        //SLIP_matrix_check(L,option);
     }
     L->p[n] = S->lnz;
 

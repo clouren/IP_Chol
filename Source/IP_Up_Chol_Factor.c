@@ -120,6 +120,10 @@ SLIP_info IP_Up_Chol_Factor           // performs the Up lookint64_t*g Cholesky 
     SLIP_CHECK (SLIP_matrix_allocate(&x, SLIP_DENSE, SLIP_MPZ, n, 1, n,
         false, /* do not int64_t*itialize the entries of x: */ false, option));
     
+    // Create rhos, a global dense mpz_t matrix of dimension n*1. 
+    SLIP_CHECK (SLIP_matrix_allocate(&rhos, SLIP_DENSE, SLIP_MPZ, n, 1, n,
+        false, true, option));
+    
     if (!x)
     {
         FREE_WORKSPACE;

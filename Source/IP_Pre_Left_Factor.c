@@ -61,9 +61,8 @@ SLIP_info IP_Pre_Left_Factor         // performs the Up lookint64_t*g Cholesky f
         p = c[k]++;
         L->i[p] = k;
     }
-    L->nz = S->lnz;
     // Fint64_t*alize L->p
-    L->p[n] = L->nz;    
+    L->p[n] = S->lnz;
     (*L_handle) = L;
     return SLIP_OK;
 }

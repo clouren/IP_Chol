@@ -9,7 +9,7 @@
 
 #include "../Include/IP-Chol.h"
 
-static inline int compare4 (const void * a, const void * b)
+static inline int64_t compare4 (const void * a, const void * b)
 {
     return ( *(int64_t*)a - *(int64_t*)b );
 }
@@ -48,7 +48,9 @@ SLIP_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular so
      * k of L 
      */
     top = IP_Chol_ereach(A, k, parent, xi, c);
+    
     j = top; // Store where the first k-1 nonzeros end
+    
     // Populate the rest of the nonzero pattern
     for (i = L->p[k]; i < L->p[k+1]; i++)
     {
@@ -58,10 +60,12 @@ SLIP_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular so
     // Reset the array
     for (i = top; i < n; i++)
     {
-        SLIP_mpz_set_ui(x->x.mpz[i], 0);
+        SLIP_mpz_set_ui(x->x.mpz[ xi[i] ], 0);
     }
+    SLIP_mpz_set_ui(x->x.mpz[k], 0);
     
-    // Now we obtain the values of the first k-1 entries of x
+    // Now we obtain the values of the first k-1 entries of x which already
+    // reside in the rows of L
     for (i = j; i < n; i++)
     {
         m = xi[i];

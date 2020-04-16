@@ -84,17 +84,13 @@ SLIP_info IP_tripread_double
     }
 
     // the triplet matrix now has nz entries
-    A->nz = nz;
+    A->nz = nz;    
 
     // At this point, A is a double triplet matrix. We make a copy of it with C
-
-    option->print_level = 2;
-    SLIP_matrix_check(A, option);
     
     SLIP_matrix* C = NULL;
     SLIP_matrix_copy(&C, SLIP_CSC, SLIP_MPZ, A, option);
 
-    SLIP_matrix_check(C, option);
     // Success. Set A_handle = C and free A
 
     SLIP_matrix_free(&A, option);
