@@ -21,12 +21,13 @@
  * is done via n iterations of the sparse REF triangular solve function. The
  * overall factorization is PAP = LDL
  */
-SLIP_info IP_Up_Chol_Factor           // performs the Up lookint64_t*g Cholesky factorization
+SLIP_info IP_Chol_Factor           // performs the Up lookint64_t*g Cholesky factorization
 (
     SLIP_matrix* A,             // matrix to be factored
     SLIP_matrix** L_handle,     // lower triangular matrix
     Sym_chol * S,               // stores guess on nnz and column permutation
     SLIP_matrix ** rhos_handle, // sequence of pivots
+    bool left,                  // Set true if performing a left-looking factorization
     SLIP_options* option        // command options
 )
 {
@@ -149,55 +150,107 @@ SLIP_info IP_Up_Chol_Factor           // performs the Up lookint64_t*g Cholesky 
     // L are not allocated. Instead, a more efficient method to
     // allocate these values is done int64_t* the factorization to reduce
     // memory usage.
-    SLIP_CHECK (SLIP_matrix_allocate(&L, SLIP_CSC, SLIP_MPZ, n, n, S->lnz,
-        false, false, option));
+    if (left)
+    {
+        OK(IP_Pre_Left_Factor(A, &L, xi, S->parent, S, c));
+    }
+    else
+    {
+        SLIP_CHECK (SLIP_matrix_allocate(&L, SLIP_CSC, SLIP_MPZ, n, n, S->lnz,
+            false, false, option));
+    }
     
     // Set the column  point64_t*ers of L
     for (k = 0; k < n; k++) L->p[k] = c[k] = S->cp[k];
     
 
-    //--------------------------------------------------------------------------
-    // Iterations 0:n-1 (1:n int64_t* standard)
-    //--------------------------------------------------------------------------
-    for (k = 0; k < n; k++)
+    if (left)
     {
-        // LDx = A(:,k)
-        SLIP_CHECK ( IP_Up_Chol_triangular_solve(&top, L, A, k, xi, S->parent, c, rhos, h, x));
-        
-        // If x[k] is nonzero that is the pivot. if x[k] == 0 then matrix is sint64_t*gular.
-        if (mpz_sgn(x->x.mpz[k]) != 0)
+        //--------------------------------------------------------------------------
+        // Iterations 0:n-1 (2:n int64_t* standard)
+        //--------------------------------------------------------------------------
+        for (k = 0; k < n; k++)
         {
-            pivot = k;
-            OK(SLIP_mpz_set(rhos->x.mpz[k], x->x.mpz[k]));
+            // LDx = A(:,k)
+            OK (IP_Left_Chol_triangular_solve(&top, L, A, k, xi, rhos, h, x, S->parent, c));
+
+            if (mpz_sgn(x->x.mpz[k]) != 0)
+            {
+                pivot = k;
+                OK(SLIP_mpz_set(rhos->x.mpz[k], x->x.mpz[k]));
+            }
+            else
+            {
+                FREE_WORKSPACE;
+                return SLIP_SINGULAR;
+            }
+            //----------------------------------------------------------------------
+            // Iterate accross the nonzeros int64_t* x
+            //----------------------------------------------------------------------
+            for (j = top; j < n; j++)
+            {
+                jnew = xi[j];
+                if (jnew >= k)
+                {
+                    // Place the i location of the L->nz nonzero
+                    size = mpz_sizeinbase(x->x.mpz[jnew],2);
+                    // GMP manual: Allocated size should be size+2
+                    OK(SLIP_mpz_init2(L->x.mpz[lnz], size+2));
+                    // Place the x value of the L->nz nonzero
+                    OK(SLIP_mpz_set(L->x.mpz[lnz],x->x.mpz[jnew]));
+                    // Increment L->nz
+                    lnz += 1;
+                }
+            }
+            //printf("\nEnd of iteration %ld L is:\n", k);
+            //SLIP_matrix_check(L,option);
         }
-        else
+    }
+    else
+    {
+        //--------------------------------------------------------------------------
+        // Iterations 0:n-1 (1:n int64_t* standard)
+        //--------------------------------------------------------------------------
+        for (k = 0; k < n; k++)
         {
-            FREE_WORKSPACE;
-            return SLIP_SINGULAR;
-        }
+            // LDx = A(:,k)
+            SLIP_CHECK ( IP_Up_Chol_triangular_solve(&top, L, A, k, xi, S->parent, c, rhos, h, x));
         
-        //----------------------------------------------------------------------
-        // Iterate accross the nonzeros int64_t* x
-        //----------------------------------------------------------------------
-        int64_t p = 0;
-        for (j = top; j < n; j++)
-        {
-            jnew = xi[j];
-            if (jnew == k) continue;
-            p = c[jnew]++;
-            // Place the i location of the L->nz nonzero
+            // If x[k] is nonzero that is the pivot. if x[k] == 0 then matrix is sint64_t*gular.
+            if (mpz_sgn(x->x.mpz[k]) != 0)
+            {
+                pivot = k;
+                OK(SLIP_mpz_set(rhos->x.mpz[k], x->x.mpz[k]));
+            }
+            else
+            {
+                FREE_WORKSPACE;
+                return SLIP_SINGULAR;
+            }
+        
+            //----------------------------------------------------------------------
+            // Iterate accross the nonzeros int64_t* x
+            //----------------------------------------------------------------------
+            int64_t p = 0;
+            for (j = top; j < n; j++)
+            {
+                jnew = xi[j];
+                if (jnew == k) continue;
+                p = c[jnew]++;
+                // Place the i location of the L->nz nonzero
+                L->i[p] = k;
+                size = mpz_sizeinbase(x->x.mpz[jnew],2);
+                // GMP manual: Allocated size should be size+2
+                OK(SLIP_mpz_init2(L->x.mpz[p], size+2));
+                // Place the x value of the L->nz nonzero
+                OK(SLIP_mpz_set(L->x.mpz[p],x->x.mpz[jnew]));
+            }
+            p = c[k]++;
             L->i[p] = k;
-            size = mpz_sizeinbase(x->x.mpz[jnew],2);
-            // GMP manual: Allocated size should be size+2
+            size = mpz_sizeinbase(x->x.mpz[k], 2);
             OK(SLIP_mpz_init2(L->x.mpz[p], size+2));
-            // Place the x value of the L->nz nonzero
-            OK(SLIP_mpz_set(L->x.mpz[p],x->x.mpz[jnew]));
+            OK(SLIP_mpz_set(L->x.mpz[p], x->x.mpz[k]));
         }
-        p = c[k]++;
-        L->i[p] = k;
-        size = mpz_sizeinbase(x->x.mpz[k], 2);
-        OK(SLIP_mpz_init2(L->x.mpz[p], size+2));
-        OK(SLIP_mpz_set(L->x.mpz[p], x->x.mpz[k]));
     }
     // Finalize L->p
     L->p[n] = S->lnz;        

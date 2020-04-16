@@ -412,19 +412,6 @@ SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solv
     SLIP_matrix* x                  // solution of system ==> kth column of L and U
 );
 
-/* Purpose: This function performs the SLIP Cholesky factorization. This factorization
- * is done via n iterations of the sparse REF triangular solve function. The
- * overall factorization is PAP = LDL
- */
-SLIP_info IP_Up_Chol_Factor           // performs the Up looking Cholesky factorization
-(
-    SLIP_matrix* A,             // matrix to be factored
-    SLIP_matrix** L_handle,     // lower triangular matrix
-    Sym_chol * S,               // stores guess on nnz and column permutation
-    SLIP_matrix ** rhos_handle, // sequence of pivots
-    SLIP_options* option        // command options
-);
-
 
 /* Purpose: This solves the system L'x = b for Cholesky factorization */
 SLIP_info IP_Chol_ltsolve 
@@ -472,6 +459,15 @@ SLIP_info IP_transpose
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
 
+SLIP_info IP_Chol_Factor           // performs the Up lookint64_t*g Cholesky factorization
+(
+    SLIP_matrix* A,             // matrix to be factored
+    SLIP_matrix** L_handle,     // lower triangular matrix
+    Sym_chol * S,               // stores guess on nnz and column permutation
+    SLIP_matrix ** rhos_handle, // sequence of pivots
+    bool left,                  // Set true if performing a left-looking factorization
+    SLIP_options* option        // command options
+);
 
 /* Purpose: This function performs the SLIP Cholesky factorization. This factorization
  * is done via n iterations of the sparse REF triangular solve function. The
@@ -503,20 +499,6 @@ SLIP_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular so
     int64_t* parent,
     int64_t* c
 );
-
-/* Purpose: This function performs the Left-looking IP Cholesky factorization. This factorization
- * is done via n iterations of the sparse REF triangular solve function. The
- * overall factorization is PAP = LDL
- */
-SLIP_info IP_Left_Chol_Factor         // performs the SLIP LU factorization
-(
-    SLIP_matrix* A,           // matrix to be factored
-    SLIP_matrix** L_handle,           // lower triangular matrix
-    Sym_chol * S,           // stores guess on nnz and column permutation
-    SLIP_matrix ** rhos_handle, // sequence of pivots
-    SLIP_options* option// command options
-);
-
 
 SLIP_info IP_forward_sub
 (

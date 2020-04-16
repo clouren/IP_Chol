@@ -14,30 +14,18 @@ LDLIBS += -lm -lgmp -lmpfr -lcolamd -lamd -L./SLIP_LU-master/lib/ -lsliplu
 CS = ./Lib/libipchol.a  $(LDLIBS)
 
 
-all: lib SLIP_Chol SLIP_Chol_debug #Up_Chol  Up_Chol_debug 
-	- ./SLIP_Chol
-#	- ./Up_Chol
+all: lib IP_Chol IP_Chol_debug
+	- ./IP_Chol
 
 lib:
 	( cd ./Lib ; $(MAKE) )
 
-SLIP_Chol_debug: lib SLIP_Chol.c Makefile
-	$(CC) $(LDFLAGS) $(CF) $(I) -g -o SLIP_Chol_debug SLIP_Chol.c $(CS) 
+IP_Chol_debug: lib IP_Chol.c Makefile
+	$(CC) $(LDFLAGS) $(CF) $(I) -g -o IP_Chol_debug IP_Chol.c $(CS) 
 
 
-SLIP_Chol: lib SLIP_Chol.c Makefile
-	$(CC) $(LDFLAGS) $(CF) $(I) -o SLIP_Chol SLIP_Chol.c $(CS) 
-
-
-Up_Chol_debug: lib Up_Chol.c Makefile
-	$(CC) $(LDFLAGS) $(CF) $(I) -g -o Up_Chol_debug Up_Chol.c $(CS)
-	
-Up_Chol: lib Up_Chol.c Makefile
-	$(CC) $(LDFLAGS) $(CF) $(I) -o Up_Chol Up_Chol.c $(CS)
-
-
-#lu: lib SLIPLU.c demos.h demos.c Makefile
-#	$(CC) $(LDFLAGS) $(CF) $(I) -o SLIPLU SLIPLU.c demos.c $(CS)
+IP_Chol: lib IP_Chol.c Makefile
+	$(CC) $(LDFLAGS) $(CF) $(I) -o IP_Chol IP_Chol.c $(CS) 
 
 clean:
 	- $(RM) *.o

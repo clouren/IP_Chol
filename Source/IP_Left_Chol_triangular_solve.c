@@ -9,7 +9,7 @@
 
 #include "../Include/IP-Chol.h"
 
-static inline int64_t compare4 (const void * a, const void * b)
+static inline int compare4 (const void * a, const void * b)
 {
     return ( *(int64_t*)a - *(int64_t*)b );
 }
