@@ -30,8 +30,13 @@ int64_t IP_determine_symmetry
 )
 {
     int64_t j;
-    SLIP_matrix *T = NULL;
+    
+    // Declare matrix T
+    SLIP_matrix *T = NULL;    
+    // T = A'
     IP_transpose(&T, A);
+    
+    // Check if i values are the same
     for (j = 0; j < A->nz; j++)
     {
         if (T->i[j] != A->i[j])
@@ -42,6 +47,7 @@ int64_t IP_determine_symmetry
         }
     }
     
+    // Check if column pointers are the same
     for (j = 0; j <= A->n; j++)
     {
         if (T->p[j] != A->p[j])
@@ -51,7 +57,9 @@ int64_t IP_determine_symmetry
             return 1;
         }
     }
-    
+
+    // If we are performing an exhaustive search, we check the x values as well
+    // This is by far the most expensive part of checking the symmetry.
     if (exhaustive == 1)
     {
         int r;
@@ -60,7 +68,7 @@ int64_t IP_determine_symmetry
             SLIP_mpz_cmp(&r, A->x.mpz[j], T->x.mpz[j]);
             if ( r != 0)
             {
-                printf("\nError, matrix is not symmetric\n");
+                printf("\nError, pattern is symmetric, values are not\n");
                 SLIP_matrix_free(&T,NULL);
                 return 1;
             }

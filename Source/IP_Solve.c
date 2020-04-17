@@ -9,11 +9,37 @@
 
 #define FREE_WORKSPACE                      \
     SLIP_matrix_free(&b2, option);          \
+    SLIP_matrix_free(&x, option);           \
+    SLIP_MPQ_CLEAR(scale);                  \
+    SLIP_MPQ_CLEAR(det2);                   \
 
 #include "../Include/IP-Chol.h"
     
-/* Purpose: This function solves the lint64_t*ear system LD^(-1)L' x = b.*/
-SLIP_info IP_Solve               //solves the lint64_t*ear system LD^(-1)L' x = b
+/* Purpose: This function solves the linear system LD^(-1)L' x = b.*
+ *
+ * Input arguments:
+ * 
+ * x_handle:        A handle to the solution matrix. On input this is NULL,
+ *                  on output x_handle contains a pointer to the solution vector(s)
+ * 
+ * A:               Permuted version of the input matrix
+ * 
+ * A_orig:          Nonpermuted input matrix
+ * 
+ * b:               Right hand side vector(s)
+ * 
+ * rhos:            Sequence of pivots encountered in factorization
+ * 
+ * L:               Lower triangular matrix
+ * 
+ * pinv:            Inverse row permutation
+ * 
+ * S:               Column permutation struct
+ * 
+ * option:          Command options
+ * 
+ */
+SLIP_info IP_Solve              // solves the linear system LDL' x = b
 (
     // Output
     SLIP_matrix** x_handle,     // rational solution to the system
@@ -23,24 +49,32 @@ SLIP_info IP_Solve               //solves the lint64_t*ear system LD^(-1)L' x = 
     SLIP_matrix* b,             // right hand side vector
     SLIP_matrix* rhos,          // sequence of pivots
     SLIP_matrix* L,             // lower triangular matrix
-    int64_t* pinv,                  // row permutation
+    int64_t* pinv,              // row permutation
     SLIP_LU_analysis *S,        // Column permutation
     SLIP_options* option        // command options
 )
 {
     SLIP_info ok;
-    if (!x_handle || !b || !rhos || !pinv) return SLIP_INCORRECT_INPUT;
+    // Check the inputs
+    SLIP_REQUIRE(A, SLIP_CSC, SLIP_MPZ);
+    SLIP_REQUIRE(A_orig, SLIP_CSC, SLIP_MPZ);
+    SLIP_REQUIRE(b, SLIP_DENSE, SLIP_MPZ);
+    SLIP_REQUIRE(rhos, SLIP_DENSE, SLIP_MPZ);
+    SLIP_REQUIRE(L, SLIP_CSC, SLIP_MPZ);
+    
+    if (!x_handle || !pinv || !S) return SLIP_INCORRECT_INPUT;
     
     int64_t i, j, k, n = L->n, nz;
     
-    mpq_t scale ;
+    mpq_t scale, det2 ;
     SLIP_MPQ_SET_NULL (scale) ;
+    SLIP_MPQ_SET_NULL (det2) ;
 
-    SLIP_matrix *x = NULL;   // fint64_t*al solution
-    SLIP_matrix *x2 = NULL;  // unpermuted solution
+    SLIP_matrix *x = NULL;   // unpermuted solution
+    SLIP_matrix *x2 = NULL;  // permuted final solution
     SLIP_matrix *b2 = NULL;  // permuted b
     
-    // Permuted b
+    // Permute b and place it in b2
     SLIP_matrix_allocate(&b2, SLIP_DENSE, SLIP_MPZ, b->m, b->n, b->m*b->n, false, true, option);
     for (i = 0; i < b->m; i++)
     {
@@ -51,8 +85,7 @@ SLIP_info IP_Solve               //solves the lint64_t*ear system LD^(-1)L' x = 
         }
     }
     
-    // L*b2 = b2
-    
+    // b2 = L \ b2    
     OK(IP_forward_sub(L, b2, rhos));
     
     // b2 = b2 * det 
@@ -62,18 +95,18 @@ SLIP_info IP_Solve               //solves the lint64_t*ear system LD^(-1)L' x = 
         OK ( SLIP_mpz_mul( b2->x.mpz[i], b2->x.mpz[i], rhos->x.mpz[L->n-1]));
     }
     
-    // U b2 = b2
+    SLIP_CHECK(SLIP_mpq_init(det2));
+    // b2 = L' \ b2
     OK(IP_Chol_ltsolve(L, b2));
     
     // x = b2/det 
-    mpq_t det2;
-    mpq_init(det2);
     mpq_set_num(det2, rhos->x.mpz[L->n-1]);
     
     SLIP_CHECK (SLIP_matrix_allocate(&x, SLIP_DENSE, SLIP_MPQ, b2->m, b->n,
         0, false, true, option)) ;
         
     nz = SLIP_matrix_nnz(b, NULL);
+    
     
     for (i = 0; i < nz; i++)
     {
@@ -82,7 +115,6 @@ SLIP_info IP_Solve               //solves the lint64_t*ear system LD^(-1)L' x = 
     }
     
     // Permute x
-    //SLIP_matrix *x2 = NULL;
     SLIP_CHECK (SLIP_matrix_allocate(&x2, SLIP_DENSE, SLIP_MPQ, x->m, x->n,
         0, false, true, option)) ;
     
@@ -94,20 +126,11 @@ SLIP_info IP_Solve               //solves the lint64_t*ear system LD^(-1)L' x = 
         }
     }
 
-    // Return x = x2
-    for (int32_t i = 0; i < x->m; i++)
-    {
-        for (int32_t j = 0; j < x->n; j++)
-        {
-            SLIP_CHECK(SLIP_mpq_set( SLIP_2D(x, i, j, mpq), SLIP_2D(x2, i, j, mpq)));
-        }
-    }
-
     // Check solution
     bool check = option->check;
     if (check)
     {
-        SLIP_CHECK (IP_check_solution (A_orig, x, b, option)) ;
+        SLIP_CHECK (IP_check_solution (A_orig, x2, b, option)) ;
     }
     
     
@@ -117,12 +140,10 @@ SLIP_info IP_Solve               //solves the lint64_t*ear system LD^(-1)L' x = 
 
     SLIP_CHECK(SLIP_mpq_init(scale));
 
-    
-    
-    // set the scalint64_t*g factor scale = A->scale / b->scale
+    // set the scaling factor scale = A->scale / b->scale
     SLIP_CHECK( SLIP_mpq_div(scale, A->scale, b->scale));
 
-    // Determine if the scalint64_t*g factor is 1
+    // Determine if the scaling factor is 1
     int r;
     SLIP_CHECK(SLIP_mpq_cmp_ui(&r, scale, 1, 1));
     nz = x->m * x->n;
@@ -130,13 +151,13 @@ SLIP_info IP_Solve               //solves the lint64_t*ear system LD^(-1)L' x = 
     {
         for (i = 0; i < nz; i++)
         {
-            SLIP_CHECK(SLIP_mpq_mul(x->x.mpq[i], x->x.mpq[i], scale));
+            SLIP_CHECK(SLIP_mpq_mul(x2->x.mpq[i], x2->x.mpq[i], scale));
         }
     }
     
     
     // Free memory
-    (*x_handle) = x;
+    (*x_handle) = x2;
     FREE_WORKSPACE;
     return SLIP_OK;
 }

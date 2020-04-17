@@ -12,18 +12,46 @@
 
 /* Purpose: This function checks if the input matrix or RHS has numbers too
  * large for double*/
-void IP_mex_check_for_inf
+bool IP_mex_check_for_inf
 (
     double* x, // The array of numeric values 
     mwSize n   // size of array
 )
 {
+ 
+    
+    bool x_is_int64 = true ;
+
     for (mwSize k = 0; k < n; k++)
     {
-        if (mxIsInf(x[k]))
+        double xk = x [k] ;
+
+        if (mxIsInf (xk))
         {
-            mexErrMsgTxt("Numbers are too large for double. Please try the C "
-                "code with mpfr, mpq, or mpz");
+            mexErrMsgTxt ("A must not have any Inf values") ;
+        }
+
+        if (mxIsNaN (xk))
+        {
+            mexErrMsgTxt ("A must not have any NaN values") ;
+        }
+
+        if (x_is_int64)
+        {
+            if (xk < INT64_MIN || xk > INT64_MAX)
+            {
+                x_is_int64 = false ;
+            }
+            else
+            {
+                int64_t xi = (int64_t) xk ;
+                if ((double) xi != xk)
+                {
+                    x_is_int64 = false ;
+                }
+            }
         }
     }
+
+    return (x_is_int64) ;
 }

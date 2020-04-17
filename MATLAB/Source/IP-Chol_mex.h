@@ -41,16 +41,6 @@ void IP_gmp_mex_free
     size_t a    // Size
 );
 
-/* Purpose: This function converts mpq array to double
- * NOTE: This induces roundoff error via the final division
-*/
-void IP_mpq_to_double
-(
-    double* x_doub,       // double array
-    const mpq_t* x_mpq,   // mpq array
-    const int32_t n       // size of b
-);
-
 void IP_check_input
 (
     const mxArray * input [],    // The matlab input array
@@ -63,28 +53,11 @@ void IP_get_matlab_options
     const mxArray* input   // The input options from MATLAB interface
 );
 
-/* Purpose: Convert int32_t* array to MATLAB mwIndex* array
- */
-void IP_int32_to_mwIndex
-(
-    mwIndex* y, 
-    int32_t* x, 
-    int32_t n
-) ;
-
-/* Purpose: convert mwIndex* array to int32_t* array
- */
-void IP_mwIndex_to_int32
-(
-    int32_t* y, 
-    mwIndex* x, 
-    mwSize n
-) ;
 
 /* Purpose: Check the input x array for numbers too large for 
  * double precision.
  */
-void IP_mex_check_for_inf
+bool IP_mex_check_for_inf
 (
     double* x, // The array of numeric values 
     mwSize n   // size of array
@@ -93,21 +66,12 @@ void IP_mex_check_for_inf
 /* Purpose: This function reads in the A matrix and right hand side vectors. */
 void IP_mex_get_A_and_b
 (
-    SLIP_sparse *A,          // Internal SLIP Mat stored in ccf 
-    SLIP_dense *b,           // mpz matrix used internally
-    const mxArray* input[],  // The input A matrix and options 
-    int32_t nargin           // Number of input to the mexFunction
+    SLIP_matrix **A_handle,  // Internal SLIP Mat stored in CSC
+    SLIP_matrix **b_handle,   // mpz matrix used internally
+    const mxArray* pargin[], // The input A matrix and options
+    int nargin,               // Number of input to the mexFunction
+    SLIP_options* option
 );
-
-
-/* Purpose: Output the solution to the linear system Ax=b to matlab
- */
-mxArray* IP_mex_output_soln
-(
-    double** x, 
-    int32_t m, 
-    int32_t n
-) ;
 
 
 /* Purpose: Report errors if they arise
@@ -117,26 +81,5 @@ void IP_mex_error
     SLIP_info status
 ) ;
 
-/* Purpose: Drop entries which are zero from a sparse matrix
- */
-mwIndex IP_dropzeros 
-(
-    mxArray *A
-);
-
-/* Purpose: Used to drop zeros 
- */
-mwIndex IP_fkeep 
-(
-    mxArray *A, 
-    bool (*fkeep) (int32_t, int32_t, double)
-);
-
-/* Purpose: transpose the matrix A
- */
-SLIP_info IP_transpose_mex 
-(
-    mxArray *A
-);
 
 #endif

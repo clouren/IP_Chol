@@ -33,4 +33,4 @@ clean:
 purge: distclean
 
 distclean: clean
-	- $(RM) -r SLIP_Chol Up_Chol *.a *.dSYM *.obj *.dll
+	- $(RM) -r IP_Chol IP_Chol_debug *.a *.dSYM *.obj *.dll

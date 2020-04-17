@@ -7,8 +7,8 @@
 
 //------------------------------------------------------------------------------
 
-/* Purpose: Determint64_t*e what error occured when usint64_t*g IP Chol. This is used solely
- * for demo/debuggint64_t*g purposes.
+/* Purpose: Determine what error occured when using IP Chol. This is used solely
+ * for demo/debugging purposes.
  */
 
 #include "../Include/IP-Chol.h"

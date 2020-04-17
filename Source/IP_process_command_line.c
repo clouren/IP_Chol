@@ -9,14 +9,14 @@
 
 #include "../Include/IP-Chol.h"
 
-/* Purpose: This processes the command lint64_t*e for user specified options */
-SLIP_info IP_process_command_line //processes the command lint64_t*e
+/* Purpose: This processes the command line for user specified options */
+SLIP_info IP_process_command_line //processes the command line
 (
-    int64_t argc,           // number of command lint64_t*e arguments
-    char* argv[],           // set of command lint64_t*e arguments
-    SLIP_options* option,   // struct containt64_t*int64_t*g the command options
-    char** mat_name,        // Name of the matrix to be read int64_t*
-    char** rhs_name,        // Name of the RHS vector to be read int64_t*
+    int64_t argc,           // number of command line arguments
+    char* argv[],           // set of command line arguments
+    SLIP_options* option,   // struct containing the command options
+    char** mat_name,        // Name of the matrix to be read in
+    char** rhs_name,        // Name of the RHS vector to be read in
     int64_t *rat            // data type of output solution.
                             // 1: mpz, 2: double, 3: mpfr
 )

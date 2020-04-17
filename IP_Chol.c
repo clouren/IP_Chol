@@ -20,7 +20,7 @@
     SLIP_matrix_free(&x,NULL);          \
     SLIP_FREE(option);                  \
     SLIP_FREE(pinv);                    \
-    SLIP_LU_analysis_free(&S, NULL);        \
+    SLIP_LU_analysis_free(&S, NULL);    \
     SLIP_FREE(S2->parent);              \
     SLIP_FREE(S2->cp);                  \
     SLIP_FREE(S2);                      \
@@ -71,7 +71,7 @@ int main( int argc, char* argv[] )
     // Default options. May be changed in SLIP_LU_config.h
     SLIP_options *option = SLIP_create_default_options();
     
-    char* mat_name = "./ExampleMats/2.mat";// Set demo matrix and RHS name
+    char* mat_name = "./ExampleMats/872.mat";// Set demo matrix and RHS name
     char* rhs_name = "./ExampleMats/872.mat.soln";
     int64_t rat = 1;
     
@@ -92,8 +92,8 @@ int main( int argc, char* argv[] )
         return 0;
     }
     
-    
     DEMO_OK(IP_tripread_double(&A, mat_file, option));
+    fclose(mat_file);
     n = A->n;
     // For this code, we utilize a vector of all ones as the RHS vector    
     SLIP_matrix_allocate(&b, SLIP_DENSE, SLIP_MPZ, n, 1, n, false, true, option);

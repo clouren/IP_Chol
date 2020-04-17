@@ -34,7 +34,7 @@ end
 flags = 'CFLAGS=''-std=c99 -fPIC''';
 
 % External libraries
-libs = '-lgmp -lmpfr -lamd -lcolamd';
+libs = '-lgmp -lmpfr -lamd -lcolamd -lsuitesparseconfig';
 
 % Path to headers
 includes = '-ISource/ -I../Source/ -I../Include/ -I../';

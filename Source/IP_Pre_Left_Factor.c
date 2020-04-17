@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_Pre_Left_Factor: Symbolic left-lookint64_t*g Chol
+// IP_Chol/IP_Pre_Left_Factor: Symbolic left-looking Chol
 //------------------------------------------------------------------------------
 
 // IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
@@ -9,21 +9,24 @@
 
 
 #include "../Include/IP-Chol.h"
-/* Purpose: This function performs a symbolic left-lookint64_t*g factorization
+/* Purpose: This function performs a symbolic left-looking factorization
+ * It allocates the memory for the L matrix and allocates the individual
+ * entries in the matrix.
  */
 SLIP_info IP_Pre_Left_Factor         // performs the Up lookint64_t*g Cholesky factorization
 (
-    SLIP_matrix* A,
-    SLIP_matrix** L_handle,              // partial L matrix
-    int64_t*  xi,                  // nonzero pattern vector
-    int64_t*  parent,              // Elimint64_t*ation tree
-    Sym_chol * S,           // stores guess on nnz and column permutation
-    int64_t * c                   // Column point64_t*ers
+    SLIP_matrix* A,                 // Input matrix
+    SLIP_matrix** L_handle,         // partial L matrix
+    int64_t*  xi,                   // nonzero pattern vector
+    int64_t*  parent,               // Elimination tree
+    Sym_chol * S,                   // stores nnz and elimination tree
+    int64_t * c                     // Column point64_t*ers
 )
 {
     SLIP_info ok;
     // Input check/
-    if (!L_handle || !xi || !parent)
+    SLIP_REQUIRE(A, SLIP_CSC, SLIP_MPZ);
+    if (!L_handle || !xi || !parent || !S || !c)
         return SLIP_INCORRECT_INPUT;
     
     int64_t  top, k, i, j, jnew, n = A->n;
@@ -44,10 +47,10 @@ SLIP_info IP_Pre_Left_Factor         // performs the Up lookint64_t*g Cholesky f
     //--------------------------------------------------------------------------
     for (k = 1; k < n; k++)
     {
-        top = IP_Chol_ereach(A, k, parent, xi, c);  // Obtaint64_t* nonzero pattern int64_t* xi[top..n]
+        top = IP_Chol_ereach(A, k, parent, xi, c);  // Obtain nonzero pattern in xi[top..n]
      
         //----------------------------------------------------------------------
-        // Iterate accross the nonzeros int64_t* x
+        // Iterate accross the nonzeros in x
         //----------------------------------------------------------------------
         int64_t p = 0;
         for (j = top; j < n; j++)
@@ -61,7 +64,7 @@ SLIP_info IP_Pre_Left_Factor         // performs the Up lookint64_t*g Cholesky f
         p = c[k]++;
         L->i[p] = k;
     }
-    // Fint64_t*alize L->p
+    // Finalize L->p
     L->p[n] = S->lnz;
     (*L_handle) = L;
     return SLIP_OK;

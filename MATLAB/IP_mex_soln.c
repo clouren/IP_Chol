@@ -8,9 +8,6 @@
 //------------------------------------------------------------------------------
 
 #include "./Source/IP-Chol_mex.h"
-//
-//#include "../SLIP_LU-master/SLIP_LU/Include/SLIP_LU.h"
-
 
 /* Purpose: .c files defining the IP-Chol matlab interfacee
  * This function defines: x = IP_Chol(A, b, option)
@@ -28,7 +25,7 @@ void mexFunction
     //--------------------------------------------------------------------------
     // Initialize SLIP LU library environment
     //--------------------------------------------------------------------------
-    SLIP_initialize_expert(mxMalloc, IP_gmp_mex_realloc, IP_gmp_mex_free);
+    SLIP_initialize_expert (mxMalloc, mxCalloc, mxRealloc, mxFree) ;
     SLIP_info status;
 
     //--------------------------------------------------------------------------
@@ -37,22 +34,26 @@ void mexFunction
     IP_check_input(pargin, nargin);
     if (nargout > 1 || nargout <= 0 || nargin != 3)
     {
-        mexErrMsgTxt("Usage: x = SLIP_LU(A,b,option)");
+        mexErrMsgTxt("Usage: x = IP_Chol(A,b,option)");
     }
     //--------------------------------------------------------------------------
     // Allocate memory
     //--------------------------------------------------------------------------
-    SLIP_sparse *A = NULL, *L = NULL;
-    A = SLIP_create_sparse();
-    L = SLIP_create_sparse();
-    SLIP_dense *b = SLIP_create_dense();
-    //Set defaults for options
-    SLIP_options* option = SLIP_create_default_options();
-    if (!A || !L || !b || !option)
-    {
-        IP_mex_error (SLIP_OUT_OF_MEMORY);
-    }
     SLIP_LU_analysis* S = NULL;
+    SLIP_matrix *A = NULL;
+    SLIP_matrix *L = NULL;
+    SLIP_matrix *b = NULL;
+    SLIP_matrix *rhos = NULL;
+    int64_t* pinv = NULL;
+    int64_t* pinv2 = NULL;
+    SLIP_matrix* A2 = NULL;
+    Sym_chol* S2 = NULL;
+    SLIP_matrix* x = NULL;
+    SLIP_options *option = SLIP_create_default_options();
+    //if (!A || !L || !b || !option)
+   // {
+    //    IP_mex_error (SLIP_OUT_OF_MEMORY);
+   // }
 
     //--------------------------------------------------------------------------
     // Declare variables and process input
@@ -61,63 +62,59 @@ void mexFunction
     IP_get_matlab_options(option, pargin[2]);
 
     // Read in A and b
-    IP_mex_get_A_and_b(A, b, pargin, nargin);
+    IP_mex_get_A_and_b(&A, &b, pargin, nargin, option);
 
-    // Create arrays based on the size of input matrix
-    S = SLIP_create_LU_analysis((A->n)+1);
-    double** soln = SLIP_create_double_mat(b->m, b->n);
-    int32_t* pinv = (int32_t*) SLIP_malloc(A->n* sizeof(int32_t));
-    mpz_t* rhos = SLIP_create_mpz_array(A->n);
-    mpq_t** soln_mpq = SLIP_create_mpq_mat(b->m, b->n);
-    if (!S || !soln || !pinv || !rhos || !soln_mpq)
-    {
-        IP_mex_error (SLIP_OUT_OF_MEMORY);
-    }
-
-    option->order = SLIP_AMD;  // AMD
     //--------------------------------------------------------------------------
-    // Symbolic analysis and factorization
+    // Perform Ordering of A
+    //--------------------------------------------------------------------------        
+    IP_MEX_OK(SLIP_LU_analyze(&S, A, option));    
+    
     //--------------------------------------------------------------------------
-    
-    
-    IP_MEX_OK (SLIP_LU_analyze(S, A, option));// Symbolic Analysis
-
-    int* pinv2 = (int*) SLIP_malloc(A->n* sizeof(int));
-    for (int k = 0; k < A->n; k++)
+    // Permute matrix A, that is set A2 = PAP'
+    //--------------------------------------------------------------------------
+    int64_t n = A->n;
+    pinv2 = (int64_t*) SLIP_malloc(n* sizeof(int64_t));
+    for (int64_t k = 0; k < n; k++)
     {
-        int index = S->q[k];
+        int64_t index = S->q[k];
         pinv2[index] = k;
     }
     
-    SLIP_sparse* A2 = NULL;
-    A2 = IP_Chol_permute_A(A, pinv2, S);
-    Sym_chol* S2 = (Sym_chol*) SLIP_malloc(1* sizeof(Sym_chol));
-    IP_MEX_OK(IP_Up_Chol_Factor(A2, L, S2, rhos, option));
+    IP_MEX_OK(IP_Chol_permute_A(&A2, A, pinv2, S));
+    
+    
     
     //--------------------------------------------------------------------------
-    // FB Substitution
+    // SLIP Chol Factorization
     //--------------------------------------------------------------------------
     
-    IP_MEX_OK(IP_Solve(soln_mpq, b->x, rhos, L, pinv2, option, 1));
-        
-    IP_MEX_OK(SLIP_permute_x(soln_mpq, b->m, b->n, S));
-
-    IP_MEX_OK(SLIP_scale_x(soln_mpq, A, b));
-    IP_MEX_OK(SLIP_get_double_soln(soln, soln_mpq, b->m, b->n));
-
+    S2 = (Sym_chol*) SLIP_malloc(1* sizeof(Sym_chol));
+    
+    IP_MEX_OK(IP_Chol_Factor( A2, &L, S2, &rhos, false, option));
+    
+    
     //--------------------------------------------------------------------------
-    // Set outputs, free memory
+    // Solve linear system
     //--------------------------------------------------------------------------
-    pargout[0] =  IP_mex_output_soln(soln, b->m, b->n);
-    SLIP_delete_mpq_mat(&soln_mpq, b->m, b->n);
-    SLIP_delete_mpz_array(&rhos, A->n);
-    SLIP_FREE(pinv);
-    SLIP_delete_double_mat(&soln, b->m, b->n);
-    SLIP_delete_LU_analysis(&S);
+    
+    IP_MEX_OK(IP_Solve( &x, A2, A, b, rhos, L, pinv2, S, option));
+    
+    SLIP_matrix *x2 = NULL;
+    IP_MEX_OK(SLIP_matrix_copy(&x2, SLIP_DENSE, SLIP_FP64, x, option));
+    
+    mxArray* Xmatlab = mxCreateDoubleMatrix ((mwSize) x2->m, (mwSize) x2->n,
+        mxREAL);
+    double* x_out = mxGetPr(Xmatlab);
+
+    for (int k = 0; k < x->n*x->m; k++)
+    {
+        x_out[k] = x2->x.fp64[k];
+    }
+    
+    pargout[0] =  Xmatlab;
+    SLIP_matrix_free(&b, option);
+    SLIP_matrix_free(&A, option);
+    SLIP_matrix_free(&A2, option);
     SLIP_FREE(option);
-    SLIP_delete_dense(&b);
-    SLIP_delete_sparse(&A2);
-    SLIP_delete_sparse(&L);
-    SLIP_delete_sparse(&A);
     SLIP_finalize();
 }

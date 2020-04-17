@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_Up_Chol_Factor: Up-lookint64_t*g Cholesky factorization
+// IP_Chol/IP_Chol_Factor: Integer preserving Cholesky factorization
 //------------------------------------------------------------------------------
 
 // IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
@@ -17,11 +17,32 @@
 
 #include "../Include/IP-Chol.h"
     
-/* Purpose: This function performs the SLIP Cholesky factorization. This factorization
- * is done via n iterations of the sparse REF triangular solve function. The
- * overall factorization is PAP = LDL
+/* Purpose: This function performs the integer preserving Cholesky factorization.
+ * It allows either the left-looking or up-looking integer-preserving Cholesky factorization.
+ * In order to compute the L matrix, it performs n iterations of a sparse REF symmetric
+ * triangular solve function. The overall factorization is PAP' = LDL'
+ * 
+ * Input arguments:
+ * 
+ * A:           The user's permuted input matrix
+ * 
+ * L_handle:    A handle to the L matrix. Null on input. On output, contains a pointer to the 
+ *              L matrix
+ * 
+ * S:           Symbolic analysis struct for Cholesky factorization. NULL on input. On output,
+ *              contains the elimination tree and number of nonzeros in L.
+ * 
+ * rhos_handle: A handle to the sequence of pivots. NULL on input. On output, contains a pointer
+ *              to the pivots matrix.
+ * 
+ * left:        A boolean parameter which tells the function whether it is performing a left-looking
+ *              or up-looking factorization. If this bool is true, a left-looking factorization
+ *              is done, otherwise the up-looking factorization is done.
+ * 
+ * option:      Command options
+ * 
  */
-SLIP_info IP_Chol_Factor           // performs the Up lookint64_t*g Cholesky factorization
+SLIP_info IP_Chol_Factor        // performs an integer-preserving Cholesky factorization
 (
     SLIP_matrix* A,             // matrix to be factored
     SLIP_matrix** L_handle,     // lower triangular matrix
@@ -32,8 +53,11 @@ SLIP_info IP_Chol_Factor           // performs the Up lookint64_t*g Cholesky fac
 )
 {
     SLIP_info ok;
-    // Input check
-    if (!A || !L_handle || !S || !rhos_handle || !option )
+    //--------------------------------------------------------------------------
+    // Check inputs
+    //--------------------------------------------------------------------------
+    SLIP_REQUIRE(A, SLIP_CSC, SLIP_MPZ);
+    if (!L_handle || !S || !rhos_handle || !option )
     {
         return SLIP_INCORRECT_INPUT;
     }
@@ -50,7 +74,7 @@ SLIP_info IP_Chol_Factor           // performs the Up lookint64_t*g Cholesky fac
     
     
     //--------------------------------------------------------------------------
-    // Declare and int64_t*itialize workspace 
+    // Declare and initialize workspace 
     //--------------------------------------------------------------------------
     
     SLIP_matrix *L = NULL ;
@@ -58,8 +82,7 @@ SLIP_info IP_Chol_Factor           // performs the Up lookint64_t*g Cholesky fac
     int64_t *xi = NULL ;
     int64_t *h = NULL ;
     SLIP_matrix *x = NULL ;
-    
-    //// Begint64_t* timint64_t*g factorization
+
     int64_t n = A->n, top, i, j, col, loc, lnz = 0, unz = 0, pivot, jnew, k;
     size_t size;
 
@@ -69,7 +92,7 @@ SLIP_info IP_Chol_Factor           // performs the Up lookint64_t*g Cholesky fac
     
     // h is the history vector utilized for the sparse REF
     // triangular solve algorithm. h serves as a global
-    // vector which is repeatedly passed int64_t*o the triangular
+    // vector which is repeatedly passed into the triangular
     // solve algorithm
     h = (int64_t*) SLIP_malloc(n* sizeof(int64_t));
 
@@ -83,55 +106,55 @@ SLIP_info IP_Chol_Factor           // performs the Up lookint64_t*g Cholesky fac
         FREE_WORKSPACE;
         return SLIP_OUT_OF_MEMORY;
     }
-    // int64_t*itialize workspace history array
+    // initialize workspace history array
     for (i = 0; i < n; i++)
     {
         h[i] = -1;
     }
 
-    // Obtaint64_t* the elimint64_t*ation tree of A
-    S->parent = IP_Chol_etree(A);              // Obtaint64_t* the elim tree
+    // Obtain the elimination tree of A
+    S->parent = IP_Chol_etree(A);         // Obtain the elim tree
     post = IP_Chol_post(S->parent, n);    // Postorder the tree
     
     // Get the column counts of A
     c = IP_Chol_counts(A, S->parent, post, 0);
     
     S->cp = (int64_t*) SLIP_malloc( (n+1)*sizeof(int64_t*));
-    S->lnz = IP_cumsum_chol(S->cp, c, n);    // Get column point64_t*ers for L
+    S->lnz = IP_cumsum_chol(S->cp, c, n);    // Get column pointers for L
    
-     //--------------------------------------------------------------------------
-    // allocate and int64_t*itialize the workspace x
+    //--------------------------------------------------------------------------
+    // allocate and initialize the workspace x
     //--------------------------------------------------------------------------
 
-    // SLIP LU utilizes arbitrary sized int64_t*egers which can grow beyond the
-    // default 64 bits allocated by GMP. If the int64_t*egers frequently grow, GMP
-    // can get bogged down by performint64_t*g int64_t*ermediate reallocations. Instead,
-    // we utilize a larger estimate on the workspace x vector so that computint64_t*g
-    // the values int64_t* L and U do not require too many extra int64_t*emediate calls to
+    // SLIP LU utilizes arbitrary sized integers which can grow beyond the
+    // default 64 bits allocated by GMP. If the integers frequently grow, GMP
+    // can get bogged down by performing intermediate reallocations. Instead,
+    // we utilize a larger estimate on the workspace x vector so that computing
+    // the values in L and U do not require too many extra intermediate calls to
     // realloc.
     //
     // Note that the estimate presented here is not an upper bound nor a lower
     // bound.  It is still possible that more bits will be required which is
-    // correctly handled int64_t*ernally.
+    // correctly handled internally.
     int64_t estimate = 64 * SLIP_MAX (2, ceil (log2 ((double) n))) ;
 
     // Create x, a global dense mpz_t matrix of dimension n*1. Unlike rhos, the
-    // second boolean parameter is set to false to avoid int64_t*itializint64_t*g
-    // each mpz entry of x with default size.  It is int64_t*ialized below.
+    // second boolean parameter is set to false to avoid initializing
+    // each mpz entry of x with default size.  It is initialized below.
     SLIP_CHECK (SLIP_matrix_allocate(&x, SLIP_DENSE, SLIP_MPZ, n, 1, n,
-        false, /* do not int64_t*itialize the entries of x: */ false, option));
+        false, /* do not initialize the entries of x: */ false, option));
     
     // Create rhos, a global dense mpz_t matrix of dimension n*1. 
     SLIP_CHECK (SLIP_matrix_allocate(&rhos, SLIP_DENSE, SLIP_MPZ, n, 1, n,
         false, true, option));
     
-    if (!x)
+    if (!x || !rhos)
     {
         FREE_WORKSPACE;
         return SLIP_OUT_OF_MEMORY;
     }
     
-    // int64_t*itialize the entries of x
+    // initialize the entries of x
     for (i = 0; i < n; i++)
     {
         // Allocate memory for entries of x
@@ -142,14 +165,15 @@ SLIP_info IP_Chol_Factor           // performs the Up lookint64_t*g Cholesky fac
     // Declare memory for L 
     //--------------------------------------------------------------------------
     
+    // If we are performing a left-looking factorization, we pre-allocate L
+    // by performing a symbolic version of the factorization and obtaining the 
+    // exact nonzero pattern of L.
+    // Conversely, if we are performing an up-looking factorization, we allocate
+    // L without initializing eah entry.
+    // In both cases, the inidividual (x) values of L are not allocated. Instead,
+    // a more efficient method to allocate these values is done inside the 
+    // factorization to reduce memory usage.
     
-    // Allocate L without int64_t*itializint64_t*g each entry.
-    // L is allocated to have nnz(L) which is estimated by the symbolic
-    // analysis. However, unlike traditional matrix allocation, the second
-    // boolean parameter here is set to false, so the int64_t*dividual values of
-    // L are not allocated. Instead, a more efficient method to
-    // allocate these values is done int64_t* the factorization to reduce
-    // memory usage.
     if (left)
     {
         OK(IP_Pre_Left_Factor(A, &L, xi, S->parent, S, c));
@@ -160,20 +184,24 @@ SLIP_info IP_Chol_Factor           // performs the Up lookint64_t*g Cholesky fac
             false, false, option));
     }
     
-    // Set the column  point64_t*ers of L
+    // Set the column pointers of L
     for (k = 0; k < n; k++) L->p[k] = c[k] = S->cp[k];
     
 
+    //--------------------------------------------------------------------------
+    // Perform the factorization
+    //--------------------------------------------------------------------------
     if (left)
     {
         //--------------------------------------------------------------------------
-        // Iterations 0:n-1 (2:n int64_t* standard)
+            // Iterations 0:n-1 (1:n in standard)
         //--------------------------------------------------------------------------
         for (k = 0; k < n; k++)
         {
             // LDx = A(:,k)
             OK (IP_Left_Chol_triangular_solve(&top, L, A, k, xi, rhos, h, x, S->parent, c));
 
+            // Set the pivot element
             if (mpz_sgn(x->x.mpz[k]) != 0)
             {
                 pivot = k;
@@ -185,7 +213,7 @@ SLIP_info IP_Chol_Factor           // performs the Up lookint64_t*g Cholesky fac
                 return SLIP_SINGULAR;
             }
             //----------------------------------------------------------------------
-            // Iterate accross the nonzeros int64_t* x
+            // Iterate accross the nonzeros in x
             //----------------------------------------------------------------------
             for (j = top; j < n; j++)
             {
@@ -202,21 +230,19 @@ SLIP_info IP_Chol_Factor           // performs the Up lookint64_t*g Cholesky fac
                     lnz += 1;
                 }
             }
-            //printf("\nEnd of iteration %ld L is:\n", k);
-            //SLIP_matrix_check(L,option);
         }
     }
     else
     {
         //--------------------------------------------------------------------------
-        // Iterations 0:n-1 (1:n int64_t* standard)
+        // Iterations 0:n-1 (1:n in standard)
         //--------------------------------------------------------------------------
         for (k = 0; k < n; k++)
         {
             // LDx = A(:,k)
             SLIP_CHECK ( IP_Up_Chol_triangular_solve(&top, L, A, k, xi, S->parent, c, rhos, h, x));
         
-            // If x[k] is nonzero that is the pivot. if x[k] == 0 then matrix is sint64_t*gular.
+            // If x[k] is nonzero that is the pivot. if x[k] == 0 then matrix is singular.
             if (mpz_sgn(x->x.mpz[k]) != 0)
             {
                 pivot = k;
@@ -229,7 +255,7 @@ SLIP_info IP_Chol_Factor           // performs the Up lookint64_t*g Cholesky fac
             }
         
             //----------------------------------------------------------------------
-            // Iterate accross the nonzeros int64_t* x
+            // Iterate accross the nonzeros in x
             //----------------------------------------------------------------------
             int64_t p = 0;
             for (j = top; j < n; j++)

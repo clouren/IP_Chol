@@ -9,9 +9,9 @@
 
 #include "../Include/IP-Chol.h"
 
-/* Purpose: p [0..n] = cumulative sum of c [0..n-1], and then copy p [0..n-1] int64_t*o c 
+/* Purpose: p [0..n] = cumulative sum of c [0..n-1], and then copy p [0..n-1] into c 
    From Tim Davis SuiteSparse */
-double IP_cumsum_chol 
+int64_t IP_cumsum_chol 
 (
     int64_t *p, 
     int64_t *c, 
@@ -19,15 +19,13 @@ double IP_cumsum_chol
 )
 {
     int64_t i, nz = 0 ;
-    double nz2 = 0 ;
-    if (!p || !c) return (-1) ;     /* check int64_t*puts */
+    if (!p || !c) return (-1) ;     /* check inputs */
     for (i = 0 ; i < n ; i++)
     {
         p [i] = nz ;
         nz += c [i] ;
-        nz2 += c [i] ;              /* also int64_t* double to avoid int64_t*64_toverflow */
         c [i] = p [i] ;             /* also copy p[0..n-1] back int64_t*o c[0..n-1]*/
     }
     p [n] = nz ;
-    return (nz2) ;                  /* return sum (c [0..n-1]) */
+    return (nz) ;                   /* return sum (c [0..n-1]) */
 }

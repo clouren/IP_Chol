@@ -138,6 +138,7 @@
 #include <time.h>
 #include <stdint.h>
 #include <inttypes.h>
+#include <assert.h>
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -170,7 +171,7 @@
 #define SLIP_UNFLIP(i) (((i) < 0) ? SLIP_FLIP(i) : (i))
 #define SLIP_MARKED(Ap,j) (Ap [j] < 0)
 #define SLIP_MARK(Ap,j) { Ap [j] = SLIP_FLIP (Ap [j]) ; }
-
+#define ASSERT(x) assert (x)
 
 // Size of mpz_t, mpq_t and mpfr_t values
 #define SIZE_MPZ  sizeof(mpz_t)
@@ -275,6 +276,32 @@
         return 0 ;                      \
     }                                   \
 }                                       \
+
+
+// return an error if A->kind (csc, triplet, dense) is wrong
+#define SLIP_REQUIRE_KIND(A,required_kind) \
+    if (A == NULL || A->kind != required_kind) return (SLIP_INCORRECT_INPUT) ;
+
+#define ASSERT_KIND(A,required_kind) \
+    ASSERT (A != NULL && A->kind == required_kind)
+
+// return an error if A->type (mpz, mpq, mpfr, int64, or double) is wrong
+#define SLIP_REQUIRE_TYPE(A,required_type) \
+    if (A == NULL || A->type != required_type) return (SLIP_INCORRECT_INPUT) ;
+
+#define ASSERT_TYPE(A,required_type) \
+    ASSERT (A != NULL && A->type == required_type)
+
+// return an error if A->kind or A->type is wrong
+#define SLIP_REQUIRE(A,required_kind,required_type)     \
+    SLIP_REQUIRE_KIND (A,required_kind) ;               \
+    SLIP_REQUIRE_TYPE (A,required_type) ;
+
+
+static inline int compare (const void * a, const void * b)
+{
+    return ( *(int64_t*)a - *(int64_t*)b );
+}
 
 //------------------------------------------------------------------------------
 // SLIP_matrix macros
@@ -437,7 +464,7 @@ SLIP_info IP_Solve               //solves the linear system LD^(-1)L' x = b
 
 /* Purpose: p [0..n] = cumulative sum of c [0..n-1], and then copy p [0..n-1] into c 
    From Tim Davis SuiteSparse */
-double IP_cumsum_chol 
+int64_t IP_cumsum_chol 
 (
     int64_t *p, 
     int64_t *c, 

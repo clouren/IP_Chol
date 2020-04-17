@@ -9,14 +9,35 @@
 
 #include "../Include/IP-Chol.h"
 
-static inline int compare4 (const void * a, const void * b)
-{
-    return ( *(int64_t*)a - *(int64_t*)b );
-}
-
-
-/* Purpose: This function performs the symmetric sparse REF triangular solve. i.e., 
- * (LD) x = A(:,k). 
+/* Purpose: This function performs the symmetric sparse REF triangular solve for
+ * the left looking Cholesky factorization. i.e., LD x = A(:,k). At the end of this function,
+ * the vector x contains the values of the kth column of the integer preserving matrix L
+ * 
+ *  Command input:
+ * top_output:      A pointer to the beginning of the nonzero pattern. Undefined
+ *                  on input, on output xi[top_output..n] contains the beginning
+ *                  of the nonzero pattern.
+ * 
+ * L:               Lower triangular matrix.
+ * 
+ * A:               Input matrix
+ * 
+ * k:               Current iteration of the algorithm
+ * 
+ * xi:              Nonzero pattern. Undefined on input, on output contains teh 
+ *                  nonzero pattern of the kth row of L
+ * 
+ * rhos:            Pivot matrix
+ * 
+ * h:               History vector
+ * 
+ * x:               Solution of linear system. Undefined on input, on output
+ *                  contains the kth row of L.
+ * 
+ * parent:          Elimintaation tree
+ * 
+ * c:               Column pointers of L
+ * 
  */
 SLIP_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
 (
@@ -33,6 +54,11 @@ SLIP_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular so
 )
 {
     SLIP_info ok;
+    SLIP_REQUIRE(L, SLIP_CSC, SLIP_MPZ);
+    SLIP_REQUIRE(A, SLIP_CSC, SLIP_MPZ);
+    SLIP_REQUIRE(rhos, SLIP_DENSE, SLIP_MPZ);
+    SLIP_REQUIRE(x, SLIP_DENSE, SLIP_MPZ);
+    
     if (!L || !A || !xi || !rhos || !h || !x)
     {
         return SLIP_INCORRECT_INPUT;
@@ -43,6 +69,7 @@ SLIP_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular so
     // Initialize REF TS by getting nonzero patern of x && obtaining A(:,k)
     //--------------------------------------------------------------------------
     n = A->n;                                // Size of matrix and the dense vectors
+    
     /* Chol_ereach gives the nonzeros located in L(k,:) upon completion
      * the vector xi contains the indices of the first k-1 nonzeros in column
      * k of L 
@@ -81,7 +108,8 @@ SLIP_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular so
             OK(SLIP_mpz_set(x->x.mpz[A->i[i]], A->x.mpz[i]));
         }
     }
-    qsort(&xi[top], n-top, sizeof(int64_t), compare4);
+    qsort(&xi[top], n-top, sizeof(int64_t), compare);
+    
     // Reset h[i] = -1 for all i in nonzero pattern
     for (i = top; i < n; i++)
     {

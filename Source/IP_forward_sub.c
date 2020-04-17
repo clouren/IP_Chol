@@ -11,10 +11,10 @@
  * essentially the same as the sparse REF triangular solve applied to each
  * column of the right hand side vectors. Like the normal one, this
  * function expects that the vector x is dense. As a result,the nonzero
- * pattern is not computed and each nonzero int64_t* x is iterated across.
+ * pattern is not computed and each nonzero in x is iterated across.
  * The system to solve is LDx = x
  *
- * On output, the mpz_t** x structure is modified
+ * On output, the matrix x structure is modified
  *
  */
 
@@ -31,9 +31,9 @@
 
 SLIP_info IP_forward_sub
 (
-    SLIP_matrix *L,   // lower triangular matrix
-    SLIP_matrix *x,        // right hand side matrix of size n*numRHS
-    SLIP_matrix *rhos      // sequence of pivots used int64_t* factorization
+    SLIP_matrix *L,         // lower triangular matrix
+    SLIP_matrix *x,         // right hand side matrix of size n*numRHS
+    SLIP_matrix *rhos       // sequence of pivots used in factorization
 )
 {
     SLIP_info ok;
@@ -42,7 +42,7 @@ SLIP_info IP_forward_sub
     n = L->n;
 
     int sgn;
-    // calloc is used, so that h is int64_t*itialized for SLIP_FREE_WORKSPACE
+    // calloc is used, so that h is initialized for SLIP_FREE_WORKSPACE
     h = (int64_t**) SLIP_calloc(n, sizeof(int64_t*));
     if (!h)
     {
@@ -74,7 +74,7 @@ SLIP_info IP_forward_sub
         for (i = 0; i < n; i++)
         {
             p = h[i][k];
-            // If x[i][k] = 0, can skip operations and contint64_t*ue to next i
+            // If x[i][k] = 0, can skip operations and continue to next i
             OK(SLIP_mpz_sgn(&sgn, SLIP_2D(x, i, k, mpz)));
             if (sgn == 0) {continue;}
 

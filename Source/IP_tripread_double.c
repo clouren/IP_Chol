@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_tripread_double: Read int64_t* a triplet matrix
+// IP_Chol/IP_tripread_double: Read in a triplet matrix
 //------------------------------------------------------------------------------
 
 // IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
@@ -9,8 +9,9 @@
 
 #include "../Include/IP-Chol.h"
 
-/* Purpose: This function reads int64_t* a double matrix stored int64_t* a triplet format
- * This format used can be seen int64_t* any of the example mat files. 
+/* Purpose: This function reads in a matrix stored in a triplet format
+ * with double entries. The format used can be seen in any of the
+ * example mat files.
  * 
  * This is only used for Demo purposes
  */
@@ -19,10 +20,9 @@ SLIP_info IP_tripread_double
 (
     SLIP_matrix **A_handle,     // Matrix to be populated
     FILE* file,                 // file to read from (must already be open)
-    SLIP_options* option
+    SLIP_options* option        // Command options
 )
 {
-
     SLIP_info info ;
     if (A_handle == NULL || file == NULL)
     {
@@ -50,7 +50,6 @@ SLIP_info IP_tripread_double
     {
         return (info) ;
     }
-
     
     s = fscanf (file, "%"PRId64" %"PRId64" %lf\n",
         &(A->i[0]), &(A->j[0]), &(A->x.fp64[0])) ;
@@ -87,6 +86,7 @@ SLIP_info IP_tripread_double
     A->nz = nz;    
 
     // At this point, A is a double triplet matrix. We make a copy of it with C
+    // C is a CSC matrix with mpz entries
     
     SLIP_matrix* C = NULL;
     SLIP_matrix_copy(&C, SLIP_CSC, SLIP_MPZ, A, option);

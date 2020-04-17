@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// IP_Chol/ip_check_solution: check solution to Ax=b
+// IP_Chol/IP_check_solution: check solution to Ax=b
 //------------------------------------------------------------------------------
 
 // SLIP_LU: (c) 2019-2020, Chris Lourenco, Jint64_t*hao Chen, Erick Moreno-Centeno,
@@ -8,8 +8,9 @@
 
 //------------------------------------------------------------------------------
 
-/* Purpose: Check the solution of the lint64_t*ear system by performint64_t*g a quick
- * rational arithmetic A*x = b.
+/* Purpose: Check the solution of the linear system by performing a rational
+ * arithmetic A*x and checking if (A*x) == b. This function should only be 
+ * used for debugging purposes.
  */
 
 #define SLIP_FREE_ALL                       \
@@ -32,9 +33,9 @@ SLIP_info IP_check_solution
     //--------------------------------------------------------------------------
 
     SLIP_info ok, info = SLIP_OK ;
-    //SLIP_REQUIRE (A, SLIP_CSC,   SLIP_MPZ) ;
-    //SLIP_REQUIRE (x, SLIP_DENSE, SLIP_MPQ) ;
-    //SLIP_REQUIRE (b, SLIP_DENSE, SLIP_MPZ) ;
+    SLIP_REQUIRE (A, SLIP_CSC,   SLIP_MPZ) ;
+    SLIP_REQUIRE (x, SLIP_DENSE, SLIP_MPQ) ;
+    SLIP_REQUIRE (b, SLIP_DENSE, SLIP_MPZ) ;
 
     //--------------------------------------------------------------------------
     // Declare vars
@@ -49,7 +50,7 @@ SLIP_info IP_check_solution
         b->nzmax, false, true, option));
 
     //--------------------------------------------------------------------------
-    // perform SLIP_mpq_addmul int64_t* loops
+    // perform SLIP_mpq_addmul in loops
     //--------------------------------------------------------------------------
 
     for (j = 0; j < b->n; j++)
@@ -96,19 +97,22 @@ SLIP_info IP_check_solution
     }
 
     //--------------------------------------------------------------------------
-    // Print64_t*64_tint64_t*fo
+    // Print info if necessary
     //--------------------------------------------------------------------------
 
     int64_t pr = option->print_level;
-    if (info == SLIP_OK)
+    if (pr >= 1)
     {
-        printf ("Solution is verified to be exact.\n") ;
-    }
-    else if (info == SLIP_INCORRECT)
-    {
-        // This can never happen.
-        printf ("ERROR! Solution is wrong. This is a bug; please "
-                  "contact the authors of IP_Chol.\n") ;
+        if (info == SLIP_OK)
+        {
+            printf ("Solution is verified to be exact.\n") ;
+        }
+        else if (info == SLIP_INCORRECT)
+        {
+            // This can never happen.
+            printf ("ERROR! Solution is wrong. This is a bug; please "
+                    "contact the authors of IP_Chol.\n") ;
+        }
     }
 
     //--------------------------------------------------------------------------
