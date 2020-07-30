@@ -19,6 +19,7 @@ void IP_determine_error
     SLIP_info ok
 )
 {
+    // TODO This has to be handled better...a library can't print error messages.
     if (ok == SLIP_OUT_OF_MEMORY)
     {
         printf("\nOut of memory\n");

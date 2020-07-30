@@ -47,8 +47,8 @@ int main( int argc, char* argv[] )
 {
 
     //--------------------------------------------------------------------------
-    // Prior to using IP-Chol, its environment must be initialized. This is done
-    // by calling the SLIP_initialize() function. 
+    // Prior to using IP-Chol, its environment must be initialized. It is 
+    // initialized using the SLIP LU enviroment, the SLIP_initialize function.
     //--------------------------------------------------------------------------
     
     SLIP_initialize();
@@ -75,7 +75,7 @@ int main( int argc, char* argv[] )
     char* mat_name = "./ExampleMats/872.mat";// Set demo matrix and RHS name
     char* rhs_name = "./ExampleMats/872.mat.soln";
     int64_t rat = 1;
-    bool left = false; // Default is up
+    bool left = false; // Default is up-looking factorization
     
     // Process the command line
     DEMO_OK(IP_process_command_line(argc, argv, &left, option,
@@ -118,12 +118,19 @@ int main( int argc, char* argv[] )
     clock_t end_col = clock();
     
     //--------------------------------------------------------------------------
-    // Determine if A is indeed symmetric. If so, we try Cholesky
-    // uncomment the one desired.
+    // Determine if A is indeed symmetric. The user has two options in this case.
+    // By setting the second input argument to true, IP_Chol performs an 
+    // exhaustive search for symmetry. That is, it checks both the nonzero pattern,
+    // and ensures that the corresponding values are identical. Thus, the matrix 
+    // can fail this check if it is structually symmetric but not actually symmetric.
+    //
+    // Alternatively, if the second argument is set to false, IP_Chol checks if 
+    // the matrix is structually symmetric but does not verify that the values are
+    // indeed identical.
     // --------------------------------------------------------------------------
-    
-    
     clock_t start_sym = clock();
+    
+    // TODO Handle error conditions here.
     int64_t test = 0;
     //test = IP_determine_symmetry(A, false);    // Determine symmetry just with nonzero pattern
     test = IP_determine_symmetry(A, true);    // Determine symmetry with nonzero pattern and values
@@ -141,18 +148,16 @@ int main( int argc, char* argv[] )
         pinv2[index] = k;
     }
     
-    
-    
     DEMO_OK( IP_Chol_permute_A(&A2, A, pinv2, S));
+    
+    // Debugging code to check the matrix if desired
     option->print_level = 2;
     option->check = true;
-    
     //SLIP_matrix_check(A2,option);
     
     //--------------------------------------------------------------------------
-    // SLIP Chol Factorization
+    // IP Chol Factorization
     //--------------------------------------------------------------------------
-    // FIX IT, its broken, i dont know why.
     clock_t start_factor = clock();
     
     S2 = (Sym_chol*) SLIP_malloc(1* sizeof(Sym_chol));
@@ -161,26 +166,9 @@ int main( int argc, char* argv[] )
     SLIP_matrix* rhos2 = NULL;
     
     DEMO_OK( IP_Chol_Factor( A2, &L, S2, &rhos, left, option));
-    
-    //DEMO_OK( IP_Left_Chol_Factor( A2, &L2, S2, &rhos2, option));
-    //DEMO_OK( IP_Up_Chol_Factor( A2, &L, S2, &rhos, option));
-    
-//     printf("\nCorrect L is: \n");
-//     SLIP_matrix_check(L, option);
-//     
-//     printf("\nWrong L is: \n");
-//     SLIP_matrix_check(L2, option);
-    
-        
-//    SLIP_matrix_check(A, option);
-//    printf("\nL is:\n");
-//    SLIP_matrix_check(L, option);
-//     
-     L->m = n;
-//     
-//     
-//     
-     clock_t end_factor = clock();
+//    L->m = n;
+
+    clock_t end_factor = clock();
      
     
     //--------------------------------------------------------------------------
@@ -203,7 +191,7 @@ int main( int argc, char* argv[] )
     double t_factor = (double) (end_factor - start_factor) / CLOCKS_PER_SEC;
     double t_solve =  (double) (end_solve - start_solve) / CLOCKS_PER_SEC;
 
-    // TODO: inherit the SLIP LU rinting functions for error handling etc
+    // TODO: inherit the SLIP LU printing functions for error handling etc
     if (left == true)
         printf("\nLeft-looking Factorization stats:");
     else
