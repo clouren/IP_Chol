@@ -2,8 +2,9 @@
 // IP_Chol/IP_process_command_lint64_t*e: Process command lint64_t*e for demo files
 //------------------------------------------------------------------------------
 
-// IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
-// Texas A&M University.  All Rights Reserved.  See IP_Chol/License for the license.
+// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
+// IP_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
@@ -14,6 +15,7 @@ SLIP_info IP_process_command_line //processes the command line
 (
     int64_t argc,           // number of command line arguments
     char* argv[],           // set of command line arguments
+    bool* left,             // Set true for left-looking, false for up
     SLIP_options* option,   // struct containing the command options
     char** mat_name,        // Name of the matrix to be read in
     char** rhs_name,        // Name of the RHS vector to be read in
@@ -62,6 +64,14 @@ SLIP_info IP_process_command_line //processes the command line
                     "\nDefaultint64_t*g to COLAMD\n\n");
                 option->order = SLIP_COLAMD;
             }
+        }
+        else if ( strcmp(arg, "left") == 0 )
+        {
+            *left = true;
+        }
+        else if ( strcmp(arg, "up") == 0 )
+        {
+            *left = false;
         }
         /* Not used, kept for legacy
         else if ( strcmp(arg,"t") == 0 || strcmp(arg, "tol") == 0)

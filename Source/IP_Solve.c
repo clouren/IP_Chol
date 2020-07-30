@@ -1,9 +1,10 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_Solve: Solve the lint64_t*ear system after factorization
+// IP_Chol/IP_Solve: Solve the linear system after factorization
 //------------------------------------------------------------------------------
 
-// IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
-// Texas A&M University.  All Rights Reserved.  See IP_Chol/License for the license.
+// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
+// IP_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
@@ -15,7 +16,7 @@
 
 #include "../Include/IP-Chol.h"
     
-/* Purpose: This function solves the linear system LD^(-1)L' x = b.*
+/* Purpose: This function solves the linear system LDL' x = b.*
  *
  * Input arguments:
  * 
@@ -39,6 +40,7 @@
  * option:          Command options
  * 
  */
+//TODO Set consts
 SLIP_info IP_Solve              // solves the linear system LDL' x = b
 (
     // Output

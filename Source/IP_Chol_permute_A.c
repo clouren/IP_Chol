@@ -2,8 +2,9 @@
 // IP_Chol/IP_Chol_permute_A: Symmetric permutation of matrix A
 //------------------------------------------------------------------------------
 
-// IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
-// Texas A&M University.  All Rights Reserved.  See IP_Chol/License for the license.
+// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
+// IP_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
@@ -12,7 +13,9 @@
 /* Purpose: Permute the matrix A and return A2 = PAP */
 SLIP_info IP_Chol_permute_A
 (
+    // Output
     SLIP_matrix **A2_handle, // Output permuted matrix
+    // Input
     SLIP_matrix* A,          // Initial input matrix
     int64_t* pinv,           // Inverse row permutation
     SLIP_LU_analysis* S      // Column permutation

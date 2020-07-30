@@ -1,9 +1,10 @@
 //------------------------------------------------------------------------------
-// IP_Chol/SLIP_Chol: Solve an SPD linear system using left-chol
+// IP_Chol/IP_Chol: Solve an SPD linear system using left or up chol
 //------------------------------------------------------------------------------
 
-// IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
-// Texas A&M University.  All Rights Reserved.  See IP_Chol/License for the license.
+// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
+// IP_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
@@ -74,9 +75,10 @@ int main( int argc, char* argv[] )
     char* mat_name = "./ExampleMats/872.mat";// Set demo matrix and RHS name
     char* rhs_name = "./ExampleMats/872.mat.soln";
     int64_t rat = 1;
+    bool left = false; // Default is up
     
     // Process the command line
-    DEMO_OK(IP_process_command_line(argc, argv, option,
+    DEMO_OK(IP_process_command_line(argc, argv, &left, option,
         &mat_name, &rhs_name, &rat));
     
     //--------------------------------------------------------------------------
@@ -123,8 +125,8 @@ int main( int argc, char* argv[] )
     
     clock_t start_sym = clock();
     int64_t test = 0;
-    //test = IP_determine_symmetry(A, 0);    // Determine symmetry just with nonzero pattern
-    test = IP_determine_symmetry(A, 1);    // Determine symmetry with nonzero pattern and values
+    //test = IP_determine_symmetry(A, false);    // Determine symmetry just with nonzero pattern
+    test = IP_determine_symmetry(A, true);    // Determine symmetry with nonzero pattern and values
         
     if (test == 1) return 0;
     
@@ -157,8 +159,6 @@ int main( int argc, char* argv[] )
     
     SLIP_matrix* L2 = NULL;
     SLIP_matrix* rhos2 = NULL;
-    
-    bool left = true;  // Set true if want left-looking
     
     DEMO_OK( IP_Chol_Factor( A2, &L, S2, &rhos, left, option));
     
@@ -203,6 +203,11 @@ int main( int argc, char* argv[] )
     double t_factor = (double) (end_factor - start_factor) / CLOCKS_PER_SEC;
     double t_solve =  (double) (end_solve - start_solve) / CLOCKS_PER_SEC;
 
+    // TODO: inherit the SLIP LU rinting functions for error handling etc
+    if (left == true)
+        printf("\nLeft-looking Factorization stats:");
+    else
+        printf("\nUp-looking Factorization stats:");
     printf("\nNumber of L nonzeros: \t\t\t%ld",
         (L->p[L->n]) );
     printf("\nSymmetry Check time: \t\t\t%lf", t_sym);

@@ -2,8 +2,9 @@
 // IP_Chol/IP_Chol_ereach: Compute reach of an elimination tree
 //------------------------------------------------------------------------------
 
-// IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
-// Texas A&M University.  All Rights Reserved.  See IP_Chol/License for the license.
+// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
+// IP_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 

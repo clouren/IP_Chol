@@ -2,8 +2,9 @@
 // IP_Chol/IP_Chol_etree: Compute the elimination tree of a matrix A
 //------------------------------------------------------------------------------
 
-// IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
-// Texas A&M University.  All Rights Reserved.  See IP_Chol/License for the license.
+// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
+// IP_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
@@ -35,7 +36,7 @@ int64_t* IP_Chol_etree
             i = A->i [p] ;
             for ( ; i != -1 && i < k ; i = inext)   // traverse from i to k 
             {
-                inext = ancestor [i] ;              // int64_t*ext = ancestor of i 
+                inext = ancestor [i] ;              // inext = ancestor of i 
                 ancestor [i] = k ;                  // path compression 
                 if (inext == -1) parent [i] = k ;   // no anc., parent is k 
             }

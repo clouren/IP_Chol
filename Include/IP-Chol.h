@@ -2,10 +2,9 @@
 // system of linear equations using one of two Integer-Preserving Cholesky factorizations. 
 // This code accompanies the paper (submitted to SIAM Journal on Matrix Analysis and
 // Applications (SIMAX))
-
-//    "Exact Solution of Sparse Symmetric Positive Definite Linear Systems via 
-//     Integer Preserving Cholesky Factorization", C. Lourenco, E. Moreno-Centeno, 
-//     T. Davis, under submission, SIMAX.
+//
+//    "A Sparse Integer-Preserving Cholesky Factorization Computed in Time Proportional
+//     to Arithmetic Work", C. Lourenco and E. Moreno-Centeno under submission, SIMAX.
 
 //    If you use this code, you must first download and install the GMP, 
 //    MPFR, SLIP LU, AMD, and COLAMD libraries. 
@@ -23,9 +22,7 @@
 //
 //   AMD and COLAMD can be found at:
 //              http://www.suitesparse.com
-//
-//  
-//
+
 
 
 //------------------------------------------------------------------------------
@@ -81,7 +78,9 @@
 //------------------------------------------------------------------------------
 
 //    This software package solves the SPD linear system Ax = b exactly. The key
-//    property of this package is that it can exactly solve ALL SPD input systems. 
+//    property of this package is that it solves SPD linear systems exactly in 
+//    time proportional to arithmetic work.
+//
 //    The input matrix and right hand side vectors are stored as either integers, double
 //    precision numbers, multiple precision floating points (through the mpfr
 //    library) or as rational numbers (as a collection of numerators and
@@ -97,9 +96,10 @@
 //    ordering or no column permutation (P=I).  
 
 //    The factor L is computed via integer preserving operations via
-//    integer-preserving Gaussian elimination. The key part of this algorithm
-//    is a REF Sparse triangular solve function which exploits sparsity and symmetry to
-//    reduce the number of operations that must be performed.
+//    integer-preserving Gaussian elimination. L is allowed to be computed
+//    either via a left-looking or up-looking method. Both of these approaches
+//    utilize a REF sparse triangular solve function which exploits both sparsity
+//    and symmetry to reduce the number of operations that must be performed.
 
 //    Once L is computed, a simplified version of the triangular solve
 //    is performed which assumes the vector b is dense. The final solution
@@ -117,9 +117,6 @@
 #ifndef IP_Chol
 #define IP_Chol
 
-
-
-
 // IP-Chol inherits many functions, GMP wrappers, etc from SLIP LU. Indeed, IP-Chol is part
 // of a suite of exact, integer-preserving sparse matrix software.
 // It also inherits the same set of external header files as SLIP LU which includes:
@@ -133,7 +130,11 @@
 //      <gmp.h>
 //      <mpfr.h>
 
+//TODO Find a way to handle this properly...perhaps include some of the SLIP LU headers
+// in Suitesparse_config.h OR make a new master folder called "Exact Factorization" and 
+// have a Suitesparse_config style header
 #include "../SLIP_LU-master/SLIP_LU/Include/SLIP_LU.h"
+
 #include <math.h>
 #include <time.h>
 #include <stdint.h>
@@ -154,7 +155,8 @@
 
 // Note that IP-Chol inherits the same error and ordering codes as SLIP LU, thus they are omitted here
 
-// Free a pointer and set it to NULL.
+// The below macros are copied from SLIP_LU.h.
+// TODO Put this in the global header file.
 #define SLIP_FREE(p)                        \
 {                                           \
     SLIP_free (p) ;                         \
@@ -324,6 +326,8 @@ static inline int compare (const void * a, const void * b)
 // pointers.
 //------------------------------------------------------------------------------
 
+//TODO In each function deleniate input/output
+
 typedef struct Sym_chol
 {
     int64_t* pinv;      // Row permutation
@@ -356,8 +360,7 @@ int64_t* IP_Chol_etree
 );
 
 /* Purpose: This function computes the reach of the kth row of A onto the graph of L using the 
-   elimination tree. This is more efficient than the SLIP_reach function 
-   It finds the nonzero pattern of row k of L and uses the upper triangular 
+   elimination tree. It finds the nonzero pattern of row k of L and uses the upper triangular 
    part of A(:,k) */
    
 int64_t IP_Chol_ereach 
@@ -402,6 +405,7 @@ int64_t IP_Chol_leaf
     int64_t* jleaf
 );
 
+//TODO Insert description
 /* Purpose: Something*/
 static void init_ata 
 (
@@ -412,6 +416,7 @@ static void init_ata
     int64_t **next
 );
 
+//TODO Insert descripiton
 /* Purpose: Something*/
 int64_t *IP_Chol_counts 
 (
@@ -539,6 +544,7 @@ SLIP_info IP_process_command_line //processes the command line
 (
     int64_t argc,           // number of command line arguments
     char* argv[],           // set of command line arguments
+    bool* left,             // Set true for left-looking, false for up
     SLIP_options* option,   // struct containing the command options
     char** mat_name,        // Name of the matrix to be read in
     char** rhs_name,        // Name of the RHS vector to be read in
@@ -568,11 +574,11 @@ void IP_determine_error
 
 /* Purpose: Determine if the input A is indeed symmetric prior to factorization.
  * There are two options as to how to determine the symmetry. 
- * By setting the input exhaustive = 1, both the nonzero pattern and the values
+ * By setting the input exhaustive = true, both the nonzero pattern and the values
  * of the nonzero entries are checked for symmetry. If A passes both of these tests,
  * then we can be sure it is indeed fully symmetric.
  * 
- * If exhaustive is set to any other value, only the nonzero pattern of A is checked,
+ * If exhaustive is set to false, only the nonzero pattern of A is checked,
  * thus we cannot gauranteee that the matrix is indeed fully symmetric as the values
  * of the entries is not checked.
  * 
@@ -583,7 +589,7 @@ void IP_determine_error
 int64_t IP_determine_symmetry
 (
     SLIP_matrix* A,
-    int64_t exhaustive
+    bool exhaustive
 );
 
 

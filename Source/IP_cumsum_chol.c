@@ -1,11 +1,14 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_cumsum_chol: Cumulative sum of a vector
+// IP_Chol/IP_cumsum_chol: Cumulative sum of a vector for Cholesky factorization
 //------------------------------------------------------------------------------
 
-// IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
-// Texas A&M University.  All Rights Reserved.  See IP_Chol/License for the license.
+// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
+// IP_Chol/License for the license.
 
 //------------------------------------------------------------------------------
+
+//TODO Move this to a utility function for SLIP LU & IP Chol?
 
 #include "../Include/IP-Chol.h"
 

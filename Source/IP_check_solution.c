@@ -1,10 +1,11 @@
 //------------------------------------------------------------------------------
 // IP_Chol/IP_check_solution: check solution to Ax=b
 //------------------------------------------------------------------------------
-
-// SLIP_LU: (c) 2019-2020, Chris Lourenco, Jint64_t*hao Chen, Erick Moreno-Centeno,
-// Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
-// SLIP_LU/License for the license.
+//
+//
+// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
+// IP_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 

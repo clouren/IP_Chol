@@ -2,8 +2,9 @@
 // IP_Chol/IP_Up_Chol_triangular_solve: Sparse symmetric REF Triangular solve
 //------------------------------------------------------------------------------
 
-// IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
-// Texas A&M University.  All Rights Reserved.  See IP_Chol/License for the license.
+// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
+// IP_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
@@ -41,7 +42,7 @@
  *                  contains the kth row of L.
  */
 
-
+// TODO Properly set which of these input/output are const
 
 SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solve
 (
@@ -72,7 +73,12 @@ SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solv
     //--------------------------------------------------------------------------
     // Initialize REF TS by getting nonzero patern of x && obtaining A(:,k)
     //--------------------------------------------------------------------------
-    top = IP_Chol_ereach(A, k, parent, xi, c);  // Obtaint nonzero pattern in xi[top..n]
+    
+    // Obtain the nonzero pattern of row k of L. The nonzero pattern is stored in
+    // xi[top..n]
+    top = IP_Chol_ereach(A, k, parent, xi, c);
+    
+    // Sort the nonzero pattern of row k of L
     qsort(&xi[top], n-top, sizeof(int64_t*), compare); 
     
     
@@ -81,22 +87,27 @@ SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solv
     {
         SLIP_CHECK (SLIP_mpz_set_ui (x->x.mpz[xi [i]], 0)) ;
     }
+    
     // Reset value of x[k]. If the matrix is nonsingular, x[k] will
     // be a part of the nonzero pattern and reset in the above loop.
-    // However, in some rare cases, the matrix can be singular but x[k]
-    // will be nonzero from a previous iteration. Thus, here we reset
+    // If the matrix is detected to be singular at this iteration,
+    // x[k] will be 0. However, in some rare cases, the matrix can be singular 
+    // but x[k] will be nonzero from a previous iteration (since entries are 
+    // only overwritten when necessary). Thus, here we manually reset
     // x[k] to account for this extremely rare case.
     SLIP_CHECK( SLIP_mpz_set_ui( x->x.mpz[k], 0));
         
-    // Reset h[i] = -1 for all i in nonzero pattern
+    // Reset the history vector, h[i] = -1 for all i in nonzero pattern
     for (i = top; i < n; i++)
     {
         h[xi[i]] = -1;
     }
     
-    // Set x = A(:,k)
+    // Initialization, Set x = A(:,k)
     for (i = A->p[k]; i < A->p[k+1]; i++)
     {
+        // Only use the nonzeros in the upper triangular portion of 
+        // column k of A
         if (A->i[i] <= k)
         {
             OK(SLIP_mpz_set(x->x.mpz[A->i[i]], A->x.mpz[i]));
@@ -110,7 +121,7 @@ SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solv
     {   
         /* Finalize x[j] */
         j = xi[p];                                  // First nonzero term
-        //if (j == k) continue;                     // Do not operate on x[k] int64_t* TS
+
         if (mpz_sgn(x->x.mpz[j]) == 0) continue;    // If x[j] == 0 no work must be done
                 
         // History update x[j]
@@ -206,7 +217,11 @@ SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solv
             OK(SLIP_mpz_divexact(x->x.mpz[k],x->x.mpz[k],rhos->x.mpz[j-1])); // x[k] = x[k] / rho[j-1] 
         h[k] = j;   
     }
-    // Finalize x[k]
+    
+    // At this point in the algorithm every entry in L(k,:) is finalized except for potentially 
+    // the pivot element. It is possible that the pivot element is not at its final value,
+    // thus we perform a final history update to finalize entry x[k]
+    
     if (h[k] < k-1)
     {
         OK(SLIP_mpz_mul(x->x.mpz[k], x->x.mpz[k], rhos->x.mpz[k-1]));
@@ -215,6 +230,7 @@ SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solv
             OK(SLIP_mpz_divexact(x->x.mpz[k], x->x.mpz[k], rhos->x.mpz[ h[k]]));
         }
     }
+    // Set the beginning of the nonzero pattern.
     *top_output = top;
     return SLIP_OK;
 }

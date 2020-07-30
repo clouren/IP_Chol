@@ -2,18 +2,20 @@
 // IP_Chol/IP_Pre_Left_Factor: Symbolic left-looking Chol
 //------------------------------------------------------------------------------
 
-// IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
-// Texas A&M University.  All Rights Reserved.  See IP_Chol/License for the license.
+// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
+// IP_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
 
 #include "../Include/IP-Chol.h"
+
 /* Purpose: This function performs a symbolic left-looking factorization
  * It allocates the memory for the L matrix and allocates the individual
  * entries in the matrix.
  */
-SLIP_info IP_Pre_Left_Factor         // performs the Up lookint64_t*g Cholesky factorization
+SLIP_info IP_Pre_Left_Factor         // performs a symbolic Cholesky factorization
 (
     SLIP_matrix* A,                 // Input matrix
     SLIP_matrix** L_handle,         // partial L matrix

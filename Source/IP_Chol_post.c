@@ -2,8 +2,9 @@
 // IP_Chol/IP_Chol_post: Postorder a forest
 //------------------------------------------------------------------------------
 
-// IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
-// Texas A&M University.  All Rights Reserved.  See IP_Chol/License for the license.
+// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
+// IP_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
@@ -12,12 +13,12 @@
 /* Purpose: post order a forest */
 int64_t* IP_Chol_post 
 (
-    int64_t* parent,    // Parent[j] is parent of node j int64_t* forest
-    int64_t n           // Number of nodes int64_t* the forest
+    int64_t* parent,    // Parent[j] is parent of node j in forest
+    int64_t n           // Number of nodes in the forest
 )
 {
     int64_t j, k = 0, *post, *w, *head, *next, *stack ;
-    if (!parent) return (NULL) ;                                // check int64_t*puts 
+    if (!parent) return (NULL) ;                                // check inputs 
     post = (int64_t*) SLIP_malloc(n* sizeof(int64_t));          // allocate result 
     w = (int64_t*) SLIP_malloc (3*n* sizeof (int64_t)) ;        // get workspace 
     if (!w || !post) return (NULL) ;

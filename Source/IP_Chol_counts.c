@@ -2,8 +2,9 @@
 // IP_Chol/IP_Chol_Counts: Column counts for Cholesky factorization
 //------------------------------------------------------------------------------
 
-// IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
-// Texas A&M University.  All Rights Reserved.  See IP_Chol/License for the license.
+// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
+// IP_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
@@ -11,7 +12,7 @@
 
 #define HEAD(k,j) (ata ? head [k] : j)
 #define NEXT(J)   (ata ? next [J] : -1)
-
+//TODO Comment what this does
 static void init_ata 
 (
     SLIP_matrix *AT, 
@@ -32,7 +33,7 @@ static void init_ata
     }
 }
 
-/* Purpose: Obtaint the column counts of an SPD matrix for Cholesky factorization */
+/* Purpose: Obtain the column counts of an SPD matrix for Cholesky factorization */
 int64_t* IP_Chol_counts 
 (
     SLIP_matrix *A, 

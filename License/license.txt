@@ -5,7 +5,7 @@ and Tim Davis
 https://github.com/clouren/SLIP_LU
 http://suitesparse.com
 
-Contact Chris Lourenco, chrisjlourenco@gmail.com, or Tim Davis
+Contact Chris Lourenco (chrisjlourenco@gmail.com) or Tim Davis
 (timdavis@aldenmath.com or DrTimothyAldenDavis@gmail.com) for a commercial
 license.
 
