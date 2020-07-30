@@ -27,7 +27,7 @@ CS = IP_check_solution.o  IP_Chol_leaf.o  IP_Chol_tdfs.o IP_forward_sub.o IP_pro
      IP_tripread_double.o IP_Chol_counts.o IP_Chol_ltsolve.o IP_cumsum_chol.o \
      IP_Solve.o IP_Chol_ereach.o IP_Chol_permute_A.o IP_determine_error.o \
      IP_Left_Chol_triangular_solve.o  IP_Sym_chol_free.o  IP_Up_Chol_triangular_solve.o \
-     IP_Chol_etree.o IP_Chol_post.o IP_determine_symmetry.o  IP_Pre_Left_Factor.o IP_transpose.o IP_Chol_Factor.o
+     IP_Chol_etree.o IP_Chol_post.o IP_determine_symmetry.o  IP_Pre_Left_Factor.o IP_transpose.o IP_Chol_Factor.o 
 
 $(CS): ../Include/IP-Chol.h Makefile
 

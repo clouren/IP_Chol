@@ -127,7 +127,7 @@ SLIP_info IP_Chol_Factor        // performs an integer-preserving Cholesky facto
     // allocate and initialize the workspace x
     //--------------------------------------------------------------------------
 
-    // SLIP LU utilizes arbitrary sized integers which can grow beyond the
+    // IP_Chol utilizes arbitrary sized integers which can grow beyond the
     // default 64 bits allocated by GMP. If the integers frequently grow, GMP
     // can get bogged down by performing intermediate reallocations. Instead,
     // we utilize a larger estimate on the workspace x vector so that computing
