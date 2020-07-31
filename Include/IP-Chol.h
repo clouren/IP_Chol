@@ -262,7 +262,7 @@
 #define OK(method)                      \
 {                                       \
     ok = method ;                       \
-    if (ok != SLIP_OK)                  \
+    if (ok != IP_Chol_OK)               \
     {                                   \
         FREE_WORKSPACE ;                \
         return 0 ;                      \
@@ -272,7 +272,7 @@
 #define SLIP_CHECK(method)              \
 {                                       \
     ok = method ;                       \
-    if (ok != SLIP_OK)                  \
+    if (ok != IP_Chol_OK)               \
     {                                   \
         return 0 ;                      \
     }                                   \
@@ -427,14 +427,14 @@ int64_t IP_Chol_leaf
 
 //TODO Insert description
 /* Purpose: Something*/
-static void init_ata 
-(
-    SLIP_matrix *AT, 
-    int64_t* post, 
-    int64_t *w, 
-    int64_t **head, 
-    int64_t **next
-);
+//static void init_ata 
+//(
+//    SLIP_matrix *AT, 
+//    int64_t* post, 
+//    int64_t *w, 
+//    int64_t **head, 
+//    int64_t **next
+//);
 
 //TODO Insert descripiton
 /* Purpose: Something*/
@@ -589,7 +589,7 @@ IP_Chol_info IP_tripread_double
 
 void IP_determine_error
 (
-    IP_Chol_info ok;
+    IP_Chol_info ok
 );
 
 /* Purpose: Determine if the input A is indeed symmetric prior to factorization.

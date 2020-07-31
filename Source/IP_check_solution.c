@@ -104,11 +104,11 @@ IP_Chol_info IP_check_solution
     int64_t pr = option->print_level;
     if (pr >= 1)
     {
-        if (info == SLIP_OK)
+        if (info == IP_Chol_OK)
         {
             printf ("Solution is verified to be exact.\n") ;
         }
-        else if (info == SLIP_INCORRECT)
+        else if (info == IP_Chol_INCORRECT)
         {
             // This can never happen.
             printf ("ERROR! Solution is wrong. This is a bug; please "

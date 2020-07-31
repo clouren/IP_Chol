@@ -28,7 +28,7 @@ IP_Chol_info IP_tripread_double
     if (A_handle == NULL || file == NULL)
     {
         printf ("invalid input\n") ;
-        return SLIP_INCORRECT_INPUT;
+        return IP_Chol_INCORRECT_INPUT;
     }
     (*A_handle) = NULL ;
 
@@ -47,7 +47,7 @@ IP_Chol_info IP_tripread_double
     SLIP_matrix *A = NULL;
     info = SLIP_matrix_allocate(&A, SLIP_TRIPLET, SLIP_FP64, m, n, nz,
         false, true, option);
-    if (info != SLIP_OK)
+    if (info != IP_Chol_OK)
     {
         return (info) ;
     }

@@ -66,7 +66,7 @@ IP_Chol_info IP_Solve              // solves the linear system LDL' x = b
     
     if (!x_handle || !pinv || !S) return SLIP_INCORRECT_INPUT;
     
-    int64_t i, j, k, n = L->n, nz;
+    int64_t i, j, nz;
     
     mpq_t scale, det2 ;
     SLIP_MPQ_SET_NULL (scale) ;

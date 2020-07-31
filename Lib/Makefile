@@ -11,6 +11,9 @@
 #
 
 
+# uncomment for extra error checking:
+#CFLAGS += -Wall -Wextra -Wpedantic -Werror
+
 LIBRARY = libipchol
 CF = $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -O
         

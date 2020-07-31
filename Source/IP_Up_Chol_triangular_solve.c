@@ -68,7 +68,7 @@ IP_Chol_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular s
     if (!xi || !parent || !c || !h)
         return SLIP_INCORRECT_INPUT;
     
-    int64_t j, i, inew, p, m, top, n = A->n, col;
+    int64_t j, i, p, m, top, n = A->n;
     
     //--------------------------------------------------------------------------
     // Initialize REF TS by getting nonzero patern of x && obtaining A(:,k)

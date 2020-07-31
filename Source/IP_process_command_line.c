@@ -23,7 +23,7 @@ IP_Chol_info IP_process_command_line //processes the command line
                             // 1: mpz, 2: double, 3: mpfr
 )
 {
-    IP_Chol_info ok;
+    //IP_Chol_info ok;
     for (int64_t  i = 1; i < argc; i++)
     {
         char* arg = (char*) argv[i];

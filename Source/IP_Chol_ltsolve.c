@@ -28,7 +28,7 @@ IP_Chol_info IP_Chol_ltsolve
     SLIP_REQUIRE(L, SLIP_CSC, SLIP_MPZ);
     SLIP_REQUIRE(x, SLIP_DENSE, SLIP_MPZ);
     
-    int64_t p, j, n, k;
+    int64_t p, j, n;
     // Set n
     n = L->n;
     // Iterate across the RHS vectors
