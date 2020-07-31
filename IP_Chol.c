@@ -132,9 +132,7 @@ int main( int argc, char* argv[] )
     // indeed identical.
     // --------------------------------------------------------------------------
     clock_t start_sym = clock();
-    
-    // TODO Handle error conditions here.
-    
+        
     //DEMO_OK(IP_determine_symmetry(A, false));    // Determine symmetry just with nonzero pattern
     DEMO_OK(IP_determine_symmetry(A, true));    // Determine symmetry with nonzero pattern and values
         

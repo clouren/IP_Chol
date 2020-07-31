@@ -78,8 +78,8 @@
 //------------------------------------------------------------------------------
 
 //    This software package solves the SPD linear system Ax = b exactly. The key
-//    property of this package is that it solves SPD linear systems exactly in 
-//    time proportional to arithmetic work.
+//    property of this package is that it solves SPD linear systems exactly using 
+//    only integer-arithmetic in time proportional to arithmetic work.
 //
 //    The input matrix and right hand side vectors are stored as either integers, double
 //    precision numbers, multiple precision floating points (through the mpfr
@@ -424,17 +424,6 @@ int64_t IP_Chol_leaf
     int64_t* ancestor, 
     int64_t* jleaf
 );
-
-//TODO Insert description
-/* Purpose: Something*/
-//static void init_ata 
-//(
-//    SLIP_matrix *AT, 
-//    int64_t* post, 
-//    int64_t *w, 
-//    int64_t **head, 
-//    int64_t **next
-//);
 
 //TODO Insert descripiton
 /* Purpose: Something*/

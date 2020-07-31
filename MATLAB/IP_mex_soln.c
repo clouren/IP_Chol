@@ -13,7 +13,7 @@
  * This function defines: x = IP_Chol(A, b, option)
  */
 
-
+//TODO Update this so that it is like the SLIP LU matlab interface.
 void mexFunction
 (
     int32_t nargout,

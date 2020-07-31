@@ -12,26 +12,6 @@
 
 #define HEAD(k,j) (ata ? head [k] : j)
 #define NEXT(J)   (ata ? next [J] : -1)
-//TODO Comment what this does
-// static void init_ata 
-// (
-//     SLIP_matrix *AT, 
-//     int64_t* post, 
-//     int64_t *w, 
-//     int64_t **head, 
-//     int64_t **next
-// )
-// {
-//     int64_t i, k, p, m = AT->n, n = AT->m;
-//     *head = w+4*n, *next = w+5*n+1 ;
-//     for (k = 0 ; k < n ; k++) w [post [k]] = k ;    /* invert post */
-//     for (i = 0 ; i < m ; i++)
-//     {
-//         for (k = n, p = AT->p[i] ; p < AT->p[i+1] ; p++) k = SLIP_MIN (k, w [AT->i[p]]);
-//         (*next) [i] = (*head) [k] ;     /* place row i in linked list k */
-//         (*head) [k] = i ;
-//     }
-// }
 
 /* Purpose: Obtain the column counts of an SPD matrix for Cholesky factorization */
 int64_t* IP_Chol_counts 
