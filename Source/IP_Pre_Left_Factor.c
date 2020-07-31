@@ -25,13 +25,12 @@ IP_Chol_info IP_Pre_Left_Factor         // performs a symbolic Cholesky factoriz
     int64_t * c                     // Column point64_t*ers
 )
 {
-    IP_Chol_info ok;
     // Input check/
     SLIP_REQUIRE(A, SLIP_CSC, SLIP_MPZ);
     if (!L_handle || !xi || !parent || !S || !c)
         return SLIP_INCORRECT_INPUT;
     
-    int64_t  top, k, i, j, jnew, n = A->n;
+    int64_t  top, k, j, jnew, n = A->n;
     //--------------------------------------------------------------------------
     // Declare memory for L 
     //--------------------------------------------------------------------------

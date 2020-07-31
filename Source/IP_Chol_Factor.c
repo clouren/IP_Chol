@@ -84,7 +84,7 @@ IP_Chol_info IP_Chol_Factor        // performs an integer-preserving Cholesky fa
     int64_t *h = NULL ;
     SLIP_matrix *x = NULL ;
 
-    int64_t n = A->n, top, i, j, col, loc, lnz = 0, unz = 0, pivot, jnew, k;
+    int64_t n = A->n, top, i, j, lnz = 0, jnew, k;
     size_t size;
 
     int64_t* post = NULL;
@@ -207,7 +207,7 @@ IP_Chol_info IP_Chol_Factor        // performs an integer-preserving Cholesky fa
             // Set the pivot element
             if (mpz_sgn(x->x.mpz[k]) != 0)
             {
-                pivot = k;
+                //pivot = k;
                 OK(SLIP_mpz_set(rhos->x.mpz[k], x->x.mpz[k]));
             }
             else
@@ -248,7 +248,7 @@ IP_Chol_info IP_Chol_Factor        // performs an integer-preserving Cholesky fa
             // If x[k] is nonzero that is the pivot. if x[k] == 0 then matrix is singular.
             if (mpz_sgn(x->x.mpz[k]) != 0)
             {
-                pivot = k;
+                //pivot = k;
                 OK(SLIP_mpz_set(rhos->x.mpz[k], x->x.mpz[k]));
             }
             else

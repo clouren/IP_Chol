@@ -22,11 +22,11 @@ int64_t* IP_Chol_etree
     ASSERT(A->kind == SLIP_CSC);
     ASSERT(A->type == SLIP_MPZ);
     
-    int64_t i, k, p, m, n, inext, *w, *parent, *ancestor, *prev ;
+    int64_t i, k, p, m, n, inext, *w, *parent, *ancestor; //*prev ;
     m = A->m ; n = A->n ;
     parent = (int64_t*) SLIP_malloc(n * sizeof(int64_t));
     w = (int64_t*) SLIP_malloc( (n+m) * sizeof(int64_t));
-    ancestor = w ; prev = w + n ;
+    ancestor = w ; //prev = w + n ;
     for (k = 0 ; k < n ; k++)
     {
         parent [k] = -1 ;                           // node k has no parent yet 
