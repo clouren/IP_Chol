@@ -14,7 +14,7 @@
  * Input/output arguments:
  *
  * S:       Symbolic analysis struct. Undefined on input; contains column
- *          permutation and guesses on L and U nnz on output
+ *          permutation and estimates of nnz(L) and nnz(U) nnz on output
  *
  * A:       Input matrix, unmodified on input/output
  *
@@ -38,6 +38,8 @@ SLIP_info SLIP_LU_analyze
     //--------------------------------------------------------------------------
     // check inputs
     //--------------------------------------------------------------------------
+
+    if (!slip_initialized ( )) return (SLIP_PANIC) ;
 
     // A can have any data type, but must be in sparse CSC format
     SLIP_REQUIRE_KIND (A, SLIP_CSC) ;
@@ -81,7 +83,7 @@ SLIP_info SLIP_LU_analyze
         {
             S->q[i] = i;
         }
-        // Guesses for number of L and U nonzeros
+        // estimates for number of L and U nonzeros
         S->lnz = S->unz = 10*anz;
     }
 
@@ -95,8 +97,10 @@ SLIP_info SLIP_LU_analyze
         double Control [AMD_CONTROL];           // Declare AMD control
         amd_l_defaults (Control) ;              // Set AMD defaults
         double Info [AMD_INFO];
-        amd_l_order(n, A->p, A->i, S->q, Control, Info); // Perform AMD
-        S->lnz = S->unz = Info[AMD_LNZ];        // Guess for unz and lnz
+        // Perform AMD
+        amd_l_order(n, (SuiteSparse_long *) A->p, (SuiteSparse_long *) A->i,
+            (SuiteSparse_long *) S->q, Control, Info) ;
+        S->lnz = S->unz = Info[AMD_LNZ];        // estimate for unz and lnz
         if (pr > 0)   // Output AMD info if desired
         {
             SLIP_PRINTF ("\n****Column Ordering Information****\n") ;
@@ -132,15 +136,17 @@ SLIP_info SLIP_LU_analyze
             A2[i] = A->i[i];
         }
         int64_t stats [COLAMD_STATS];
-        colamd_l (n, n, Alen, A2, S->q, (double *) NULL, stats);
-        // Guess for lnz and unz
+        colamd_l (n, n, Alen, (SuiteSparse_long *) A2,
+            (SuiteSparse_long *) S->q, (double *) NULL,
+            (SuiteSparse_long *) stats) ;
+        // estimate for lnz and unz
         S->lnz = S->unz = 10*anz;
 
         // Print stats if desired
         if (pr > 0)
         {
             SLIP_PRINTF ("\n****Column Ordering Information****\n") ;
-            colamd_l_report (stats) ;
+            colamd_l_report ((SuiteSparse_long *) stats) ;
             SLIP_PRINTF ("\nEstimated L and U nonzeros: %" PRId64 "\n", S->lnz);
         }
         SLIP_FREE(A2);
@@ -148,17 +154,17 @@ SLIP_info SLIP_LU_analyze
 
     //--------------------------------------------------------------------------
     // Make sure appropriate space is allocated. It's possible to return
-    // guesses which exceed the dimension of L and U or guesses which are too
-    // small for L U. In this case, this block of code ensures that the guesses
-    // on nnz(L) and nnz(U) are at least n and no more than n*n.
+    // estimates which exceed the dimension of L and U or estimates which are
+    // too small for L U. In this case, this block of code ensures that the
+    // estimates on nnz(L) and nnz(U) are at least n and no more than n*n.
     //--------------------------------------------------------------------------
-    // Guess exceeds max number of nnz in A
+    // estimate exceeds max number of nnz in A
     if (S->lnz > (double) n*n)
     {
         int64_t nnz = ceil(0.5*n*n);
         S->lnz = S->unz = nnz;
     }
-    // If < n, first column of triangular solve may fail
+    // If estimate < n, first column of triangular solve may fail
     if (S->lnz < n)
     {
         S->lnz = S->lnz + n;

@@ -11,7 +11,7 @@
 #include "../Include/IP-Chol.h"
 
 /* Purpose: Permute the matrix A and return A2 = PAP */
-SLIP_info IP_Chol_permute_A
+IP_Chol_info IP_Chol_permute_A
 (
     // Output
     SLIP_matrix **A2_handle, // Output permuted matrix
@@ -21,7 +21,7 @@ SLIP_info IP_Chol_permute_A
     SLIP_LU_analysis* S      // Column permutation
 )
 {
-    SLIP_info ok;
+    IP_Chol_info ok;
     // Check inputs
     SLIP_REQUIRE(A, SLIP_CSC, SLIP_MPZ);
     if (!A2_handle || !pinv || !S)

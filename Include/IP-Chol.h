@@ -180,7 +180,6 @@
 #define SIZE_MPQ  sizeof(mpq_t)
 #define SIZE_MPFR sizeof(mpfr_t)
 
-
 // Field access macros for MPZ/MPQ/MPFR struct
 // (similar definition in gmp-impl.h and mpfr-impl.h)
 
@@ -319,6 +318,27 @@ static inline int compare (const void * a, const void * b)
 // To access the (i,j)th entry in a 2D SLIP_matrix, in any type:
 #define SLIP_2D(A,i,j,type) SLIP_1D (A, (i)+(j)*((A)->m), type)
 
+//------------------------------------------------------------------------------
+// Error codes
+//------------------------------------------------------------------------------
+
+// Most IP_Chol functions return a code that indicates if it was successful
+// or not. Otherwise the code returns a pointer to the object that was created
+// or it returns void (in the case that an object was deleted)
+
+typedef enum
+{
+    IP_Chol_OK = 0,                // all is well
+    IP_Chol_OUT_OF_MEMORY = -1,    // out of memory
+    IP_Chol_SINGULAR = -2,         // the input matrix A is singular
+    IP_Chol_INCORRECT_INPUT = -3,  // one or more input arguments are incorrect
+    IP_Chol_INCORRECT = -4,        // The solution is incorrect
+    IP_Chol_PANIC = -5,            // IP_Chol used without proper initialization
+    IP_Chol_UNSYMMETRIC = -6       // Input matrix is unsymmetric
+}
+IP_Chol_info ;
+
+
 
 //------------------------------------------------------------------------------
 // Sym_chol is the data structure for symbolic analysis in the IP-Cholesky 
@@ -344,7 +364,7 @@ void IP_Sym_chol_free
 );
    
 /* Purpose: Permute the matrix A and return A2 = PAP */
-SLIP_info IP_Chol_permute_A
+IP_Chol_info IP_Chol_permute_A
 (
     SLIP_matrix **A2_handle,// Output permuted matrix
     SLIP_matrix* A,        // Initial input matrix
@@ -430,7 +450,7 @@ int64_t *IP_Chol_counts
  * Cholesky factorization. i.e., 
  * (LD) x = A(1:k-1,k). 
  */
-SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solve
+IP_Chol_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solve
 (
     int64_t *top_output,        // Output the beginning of nonzero pattern
     SLIP_matrix* L,              // partial L matrix
@@ -446,13 +466,13 @@ SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solv
 
 
 /* Purpose: This solves the system L'x = b for Cholesky factorization */
-SLIP_info IP_Chol_ltsolve 
+IP_Chol_info IP_Chol_ltsolve 
 (
     SLIP_matrix *L,    // The lower triangular matrix
     SLIP_matrix *x      // Solution vector
 );
 
-SLIP_info IP_Solve               //solves the linear system LD^(-1)L' x = b
+IP_Chol_info IP_Solve               //solves the linear system LD^(-1)L' x = b
 (
     // Output
     SLIP_matrix** x_handle,     // rational solution to the system
@@ -477,7 +497,7 @@ int64_t IP_cumsum_chol
 );
 
 /* Purpose: This function sets C = A' */
-SLIP_info IP_transpose
+IP_Chol_info IP_transpose
 (
     SLIP_matrix **C_handle,     // C = A'
     SLIP_matrix *A              // Matrix to be transposed
@@ -491,7 +511,7 @@ SLIP_info IP_transpose
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
 
-SLIP_info IP_Chol_Factor           // performs the Up lookint64_t*g Cholesky factorization
+IP_Chol_info IP_Chol_Factor           // performs the Up lookint64_t*g Cholesky factorization
 (
     SLIP_matrix* A,             // matrix to be factored
     SLIP_matrix** L_handle,     // lower triangular matrix
@@ -505,7 +525,7 @@ SLIP_info IP_Chol_Factor           // performs the Up lookint64_t*g Cholesky fac
  * is done via n iterations of the sparse REF triangular solve function. The
  * overall factorization is PAP = LDL
  */
-SLIP_info IP_Pre_Left_Factor         // performs the Up looking Cholesky factorization
+IP_Chol_info IP_Pre_Left_Factor         // performs the Up looking Cholesky factorization
 (
     SLIP_matrix* A,
     SLIP_matrix** L_handle,              // partial L matrix
@@ -518,7 +538,7 @@ SLIP_info IP_Pre_Left_Factor         // performs the Up looking Cholesky factori
 /* Purpose: This function performs the symmetric sparse REF triangular solve. i.e., 
  * (LD) x = A(:,k). 
  */
-SLIP_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
+IP_Chol_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
 (
     int64_t *top_output,        // Output the beginning of nonzero pattern
     SLIP_matrix* L,              // partial L matrix
@@ -532,7 +552,7 @@ SLIP_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular so
     int64_t* c
 );
 
-SLIP_info IP_forward_sub
+IP_Chol_info IP_forward_sub
 (
     SLIP_matrix *L,   // lower triangular matrix
     SLIP_matrix *x,        // right hand side matrix of size n*numRHS
@@ -540,7 +560,7 @@ SLIP_info IP_forward_sub
 );
 
 /* Purpose: This processes the command line for user specified options */
-SLIP_info IP_process_command_line //processes the command line
+IP_Chol_info IP_process_command_line //processes the command line
 (
     int64_t argc,           // number of command line arguments
     char* argv[],           // set of command line arguments
@@ -558,7 +578,7 @@ SLIP_info IP_process_command_line //processes the command line
  * This is only used for Demo purposes
  */
 
-SLIP_info IP_tripread_double
+IP_Chol_info IP_tripread_double
 (
     SLIP_matrix **A_handle,     // Matrix to be populated
     FILE* file,                 // file to read from (must already be open)
@@ -569,7 +589,7 @@ SLIP_info IP_tripread_double
 
 void IP_determine_error
 (
-    SLIP_info ok;
+    IP_Chol_info ok;
 );
 
 /* Purpose: Determine if the input A is indeed symmetric prior to factorization.
@@ -586,14 +606,14 @@ void IP_determine_error
  * 
  */
 
-int64_t IP_determine_symmetry
+IP_Chol_info IP_determine_symmetry
 (
     SLIP_matrix* A,
     bool exhaustive
 );
 
 
-SLIP_info IP_check_solution
+IP_Chol_info IP_check_solution
 (
     const SLIP_matrix *A,         // Input matrix
     const SLIP_matrix *x,         // Solution vectors

@@ -44,6 +44,17 @@
 //------------------------------------------------------------------------------
 
 //    Christopher Lourenco, Jinhao Chen, Erick Moreno-Centeno, and Timothy Davis
+//
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//-------------------------Contact Information----------------------------------
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+
+//    Please contact Chris Lourenco (chrisjlourenco@gmail.com)
+//    or Tim Davis (timdavis@aldenmath.com, DrTimothyAldenDavis@gmail.com,
+//                  davis@tamu.edu)
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -112,7 +123,7 @@
 
 //    The factors L and U are computed via integer preserving operations via
 //    integer-preserving Gaussian elimination. The key part of this algorithm
-//    is a Round-off Error Free (REF) sparse triangular solve function which
+//    is a Roundoff Error Free (REF) sparse triangular solve function which
 //    exploits sparsity to reduce the number of operations that must be
 //    performed.
 
@@ -148,10 +159,10 @@
 //------------------------------------------------------------------------------
 
 // Current version of the code
-#define SLIP_LU_VERSION "1.0.0"
+#define SLIP_LU_VERSION "1.0.1"
 #define SLIP_LU_VERSION_MAJOR 1
 #define SLIP_LU_VERSION_MINOR 0
-#define SLIP_LU_VERSION_SUB   0
+#define SLIP_LU_VERSION_SUB   1
 
 //------------------------------------------------------------------------------
 // Error codes
@@ -168,8 +179,7 @@ typedef enum
     SLIP_SINGULAR = -2,         // the input matrix A is singular
     SLIP_INCORRECT_INPUT = -3,  // one or more input arguments are incorrect
     SLIP_INCORRECT = -4,        // The solution is incorrect
-    SLIP_UNINITIALIZED = -5     // SLIP_LU used without proper initialization
-    // TODO add this check to the SLIP_ user codes (Tim)
+    SLIP_PANIC = -5             // SLIP_LU used without proper initialization
 }
 SLIP_info ;
 
@@ -222,7 +232,7 @@ typedef struct SLIP_options
     int print_level ;      // 0: print nothing, 1: just errors,
                            // 2: terse (basic stats from COLAMD/AMD and
                            // SLIP LU), 3: all, with matrices and results
-    uint64_t prec ;        // Precision used to output file if MPFR is chosen
+    int32_t prec ;         // Precision used to output file if MPFR is chosen
     mpfr_rnd_t round ;     // Type of MPFR rounding used
     bool check ;           // Set true if the solution to the system should be
                            // checked.  Intended for debugging only; SLIP_LU is
@@ -418,7 +428,7 @@ SLIP_info SLIP_matrix_copy
 // SLIP_LU_analysis: symbolic pre-analysis
 //------------------------------------------------------------------------------
 
-// This struct stores the column permutation for LU and the guess on the
+// This struct stores the column permutation for LU and the estimate of the
 // number of nonzeros in L and U.
 
 typedef struct
@@ -436,7 +446,7 @@ typedef struct
 // The symbolic analysis object is created by SLIP_LU_analyze.
 
 // SLIP_LU_analysis_free frees the SLIP_LU_analysis object.
-void SLIP_LU_analysis_free        
+SLIP_info SLIP_LU_analysis_free        
 (
     SLIP_LU_analysis **S, // Structure to be deleted
     const SLIP_options *option
@@ -516,13 +526,13 @@ void *SLIP_realloc      // pointer to reallocated block, or original block
 
 // SLIP_initialize: initializes the working evironment for SLIP LU library.
 // It must be called prior to calling any other SLIP_* function.
-void SLIP_initialize (void) ;
+SLIP_info SLIP_initialize (void) ;
 
 // SLIP_initialize_expert is the same as SLIP_initialize, except that it allows
 // for a redefinition of custom memory functions that are used for SLIP_LU and
 // GMP.  The four inputs to this function are pointers to four functions with
 // the same signatures as the ANSI C malloc, calloc, realloc, and free.
-void SLIP_initialize_expert
+SLIP_info SLIP_initialize_expert
 (
     void* (*MyMalloc) (size_t),             // user-defined malloc
     void* (*MyCalloc) (size_t, size_t),     // user-defined calloc
@@ -533,7 +543,7 @@ void SLIP_initialize_expert
 // SLIP_finalize: This function finalizes the working evironment for SLIP LU
 // library, and frees any internal workspace created by SLIP_LU.  It must be
 // called as the last SLIP_* function called.
-void SLIP_finalize (void) ;
+SLIP_info SLIP_finalize (void) ;
 
 //------------------------------------------------------------------------------
 // Primary factorization & solve routines
@@ -586,8 +596,9 @@ SLIP_info SLIP_LU_factorize
     SLIP_matrix **rhos_handle,  // sequence of pivots
     int64_t **pinv_handle,      // inverse row permutation
     // input:
-    const SLIP_matrix *A,        // matrix to be factored
-    const SLIP_LU_analysis *S,   // stores guess on nnz and column permutation
+    const SLIP_matrix *A,       // matrix to be factored
+    const SLIP_LU_analysis *S,  // column permutation and estimates
+                                // of nnz in L and U 
     const SLIP_options* option
 ) ;
 
@@ -745,8 +756,6 @@ SLIP_info SLIP_mpfr_div_d (mpfr_t x, const mpfr_t y, const double z,
 SLIP_info SLIP_mpfr_ui_pow_ui (mpfr_t x, const uint64_t y, const uint64_t z,
                     const mpfr_rnd_t rnd) ;
 
-SLIP_info SLIP_mpfr_log2(mpfr_t x, const mpfr_t y, const mpfr_rnd_t rnd) ;
-
 SLIP_info SLIP_mpfr_sgn (int *sgn, const mpfr_t x) ;
 
 SLIP_info SLIP_mpfr_free_cache (void) ;
@@ -763,6 +772,7 @@ SLIP_info SLIP_mpfr_fprintf (FILE *fp, const char *format, ... ) ;
 SLIP_info SLIP_mpz_set_d (mpz_t x, const double y) ;
 SLIP_info SLIP_mpz_add (mpz_t a, const mpz_t b, const mpz_t c) ;
 SLIP_info SLIP_mpz_addmul (mpz_t x, const mpz_t y, const mpz_t z) ;
+SLIP_info SLIP_mpfr_log2(mpfr_t x, const mpfr_t y, const mpfr_rnd_t rnd) ;
 #endif
 
 #endif

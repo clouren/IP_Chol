@@ -44,7 +44,7 @@
 
 // TODO Properly set which of these input/output are const
 
-SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solve
+IP_Chol_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solve
 (
     int64_t *top_output,            // Output the beginng of nonzero pattern
     SLIP_matrix* L,                 // partial L matrix
@@ -58,7 +58,7 @@ SLIP_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solv
     SLIP_matrix* x                  // solution of system ==> kth column of L and U
 )
 {
-    SLIP_info ok;
+    IP_Chol_info ok;
     
     SLIP_REQUIRE(L, SLIP_CSC, SLIP_MPZ);
     SLIP_REQUIRE(A, SLIP_CSC, SLIP_MPZ);

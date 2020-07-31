@@ -11,7 +11,7 @@
 #include "../Include/IP-Chol.h"
 
 /* Purpose: This processes the command line for user specified options */
-SLIP_info IP_process_command_line //processes the command line
+IP_Chol_info IP_process_command_line //processes the command line
 (
     int64_t argc,           // number of command line arguments
     char* argv[],           // set of command line arguments
@@ -23,7 +23,7 @@ SLIP_info IP_process_command_line //processes the command line
                             // 1: mpz, 2: double, 3: mpfr
 )
 {
-    SLIP_info ok;
+    IP_Chol_info ok;
     for (int64_t  i = 1; i < argc; i++)
     {
         char* arg = (char*) argv[i];

@@ -12,12 +12,17 @@
 
 #include "slip_internal.h"
 
-void SLIP_finalize
+SLIP_info SLIP_finalize
 (
     void
 )
 {
+    if (!slip_initialized ( )) return (SLIP_PANIC) ;
+
     SLIP_mpfr_free_cache ( ) ;    // Free mpfr internal cache
     slip_gmp_finalize ( ) ;       // Reset GMP memory variables
+
+    slip_set_initialized (false) ;
+    return (SLIP_OK) ;
 }
 

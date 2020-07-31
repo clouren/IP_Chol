@@ -15,7 +15,7 @@
  * It allocates the memory for the L matrix and allocates the individual
  * entries in the matrix.
  */
-SLIP_info IP_Pre_Left_Factor         // performs a symbolic Cholesky factorization
+IP_Chol_info IP_Pre_Left_Factor         // performs a symbolic Cholesky factorization
 (
     SLIP_matrix* A,                 // Input matrix
     SLIP_matrix** L_handle,         // partial L matrix
@@ -25,7 +25,7 @@ SLIP_info IP_Pre_Left_Factor         // performs a symbolic Cholesky factorizati
     int64_t * c                     // Column point64_t*ers
 )
 {
-    SLIP_info ok;
+    IP_Chol_info ok;
     // Input check/
     SLIP_REQUIRE(A, SLIP_CSC, SLIP_MPZ);
     if (!L_handle || !xi || !parent || !S || !c)

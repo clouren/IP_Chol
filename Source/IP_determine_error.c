@@ -16,20 +16,23 @@
 
 void IP_determine_error
 (
-    SLIP_info ok
+    IP_Chol_info ok
 )
 {
-    // TODO This has to be handled better...a library can't print error messages.
-    if (ok == SLIP_OUT_OF_MEMORY)
+    if (ok == IP_Chol_OUT_OF_MEMORY)
     {
         printf("\nOut of memory\n");
     }
-    else if (ok == SLIP_SINGULAR)
+    else if (ok == IP_Chol_SINGULAR)
     {
         printf("\nInput matrix is singular OR no diagonal pivot. Please ensure input is SPD\n");
     }
-    else if (ok == SLIP_INCORRECT_INPUT)
+    else if (ok == IP_Chol_INCORRECT_INPUT)
     {
         printf("\nIncorrect input for a IP Chol Function\n");
+    }
+    else if (ok == IP_Chol_UNSYMMETRIC)
+    {
+        printf("\nMatrix is unsymmetric, please try with SLIP LU\n");
     }
 }

@@ -15,13 +15,13 @@
 /* Purpose: This function sets C = A' 
  * C_handle is NULL on input. On output, C_handle contains a pointer to A'
  */
-SLIP_info IP_transpose
+IP_Chol_info IP_transpose
 (
     SLIP_matrix **C_handle,     // C = A'
     SLIP_matrix *A              // Matrix to be transposed
 )
 {
-    SLIP_info ok;
+    IP_Chol_info ok;
     // Check input
     SLIP_REQUIRE(A, SLIP_CSC, SLIP_MPZ);
     if (!C_handle) 

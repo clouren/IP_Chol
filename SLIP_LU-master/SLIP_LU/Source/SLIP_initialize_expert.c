@@ -23,7 +23,7 @@
 
 #include "slip_internal.h"
 
-void SLIP_initialize_expert
+SLIP_info SLIP_initialize_expert
 (
     void* (*MyMalloc) (size_t),             // user-defined malloc
     void* (*MyCalloc) (size_t, size_t),     // user-defined calloc
@@ -31,6 +31,8 @@ void SLIP_initialize_expert
     void  (*MyFree) (void *)                // user-defined free
 )
 {
+
+    if (slip_initialized ( )) return (SLIP_PANIC) ;
 
     //--------------------------------------------------------------------------
     // define the malloc/calloc/realloc/free functions 
@@ -45,6 +47,6 @@ void SLIP_initialize_expert
     // Set GMP memory functions
     //--------------------------------------------------------------------------
 
-    SLIP_initialize ( ) ;
+    return (SLIP_initialize ( )) ;
 }
 

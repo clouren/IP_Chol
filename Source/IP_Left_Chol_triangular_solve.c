@@ -40,7 +40,7 @@
  * c:               Column pointers of L
  * 
  */
-SLIP_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
+IP_Chol_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular solve
 (
     int64_t *top_output,        // Output the beginning of nonzero pattern
     SLIP_matrix* L,              // partial L matrix
@@ -54,7 +54,7 @@ SLIP_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular so
     int64_t* c
 )
 {
-    SLIP_info ok;
+    IP_Chol_info ok;
     SLIP_REQUIRE(L, SLIP_CSC, SLIP_MPZ);
     SLIP_REQUIRE(A, SLIP_CSC, SLIP_MPZ);
     SLIP_REQUIRE(rhos, SLIP_DENSE, SLIP_MPZ);

@@ -9,9 +9,47 @@
 //------------------------------------------------------------------------------
 
 #define SLIP_FREE_ALL    \
-    SLIP_FREE(mark);
+    SLIP_FREE (work) ;
 
 #include "slip_internal.h"
+
+// if pr == 2, turn off printing after 30 lines of output
+#define SLIP_PR_LIMIT                       \
+    lines++ ;                               \
+    if (pr == 2 && lines > 30)              \
+    {                                       \
+        SLIP_PRINTF ("    ...\n") ;         \
+        pr = 1 ;                            \
+    }
+
+int compar (const void *x, const void *y) ;
+
+int compar (const void *x, const void *y)
+{
+    // compare two (i,j) tuples
+    int64_t *a = (int64_t *) x ;
+    int64_t *b = (int64_t *) y ;
+    if (a [0] < b [0])
+    {
+        return (-1) ;
+    }
+    else if (a [0] > b [0])
+    {
+        return (1) ;
+    }
+    else if (a [1] < b [1])
+    {
+        return (-1) ;
+    }
+    else if (a [1] > b [1])
+    {
+        return (1) ;
+    }
+    else
+    {
+        return (0) ;
+    }
+}
 
 /* check the validity of a SLIP_matrix */
 
@@ -28,10 +66,14 @@ SLIP_info SLIP_matrix_check     // returns a SLIP_LU status code
 )
 {
 
+    if (!slip_initialized ( )) return (SLIP_PANIC) ;
+
     //--------------------------------------------------------------------------
     // check the dimensions
     //--------------------------------------------------------------------------
 
+    SLIP_info status = 0 ;
+    char * buff = NULL ;
     int pr = SLIP_OPTION_PRINT_LEVEL (option) ;
     int64_t nz = SLIP_matrix_nnz(A, option);    // Number of nonzeros in A
     if (nz < 0)
@@ -70,13 +112,22 @@ SLIP_info SLIP_matrix_check     // returns a SLIP_LU status code
         SLIP_PR1 ("A has invalid type.\n") ;
         return (SLIP_INCORRECT_INPUT) ;
     }
-    else
+
+    SLIP_PR2 ("SLIP_matrix: nrows: %"PRId64", ncols: %"PRId64", nz:"
+        "%"PRId64", nzmax: %"PRId64", kind: %s, type: %s\n", m, n, nz,
+        nzmax, A->kind < 1 ? "CSC" : A->kind < 2 ? "Triplet" : "Dense",
+        A->type < 1 ? "MPZ" : A->type < 2 ? "MPQ" : A->type < 3 ?
+        "MPFR" : A->type < 4 ? "int64" : "double") ;
+
+    if (pr >= 2)
     {
-        SLIP_PR2 ("SLIP_matrix: nrows: %"PRId64", ncols: %"PRId64", nz:"
-            "%"PRId64", nzmax: %"PRId64", kind: %s, type: %s\n", m, n, nz,
-            nzmax, A->kind < 1 ? "CSC" : A->kind < 2 ? "Triplet" : "Dense",
-            A->type < 1 ? "MPZ" : A->type < 2 ? "MPQ" : A->type < 3 ?
-            "MPFR" : A->type < 4 ? "int64" : "double") ;
+        SLIP_PR2 ("scale factor: ") ;
+        status = SLIP_mpfr_asprintf (&buff,"%Qd\n", A->scale) ;
+        if (status >= 0)
+        {
+            SLIP_PR2 ("%s", buff) ;
+            SLIP_mpfr_free_str (buff) ;
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -84,9 +135,10 @@ SLIP_info SLIP_matrix_check     // returns a SLIP_LU status code
     //--------------------------------------------------------------------------
 
     int64_t i, j, p, pend ;
-    int64_t* mark = NULL;   // used for checking duplicate index of CSC
-    bool* bmark = NULL;     // used for checking duplicate index of triplet
+    int64_t* work = NULL;   // used for checking duplicates for CSC and triplet
     uint64_t prec = SLIP_OPTION_PREC (option);
+
+    int64_t lines = 0 ;     // # of lines printed so far
 
     //--------------------------------------------------------------------------
     // check each kind of matrix: CSC, triplet, or dense
@@ -138,8 +190,8 @@ SLIP_info SLIP_matrix_check     // returns a SLIP_LU status code
             }
 
             // allocate workspace to check for duplicates
-            mark = (int64_t *) SLIP_calloc (m, sizeof (int64_t)) ;
-            if (mark == NULL)
+            work = (int64_t *) SLIP_calloc (m, sizeof (int64_t)) ;
+            if (work == NULL)
             {
                 // out of memory
                 SLIP_PR1 ("out of memory\n") ;
@@ -149,56 +201,74 @@ SLIP_info SLIP_matrix_check     // returns a SLIP_LU status code
 
             for (j = 0 ; j < n ; j++)  // iterate across columns
             {
+                SLIP_PR_LIMIT ;
                 SLIP_PR2 ("column %"PRId64" :\n", j) ;
                 int64_t marked = j+1 ;
                 for (p = Ap [j] ; p < Ap [j+1] ; p++)
                 {
                     i = Ai [p] ;
-                    if (i < 0 || i >= m || mark [i] == marked)
+                    if (i < 0 || i >= m)
                     {
-                        // row indices out of range, or duplicate
-                        SLIP_PR1 ("invalid index\n") ;
+                        // row indices out of range
+                        SLIP_PR1 ("index out of range: (%ld,%ld)\n", i, j) ;
+                        SLIP_FREE_ALL ;
+                        return (SLIP_INCORRECT_INPUT) ;
+                    }
+                    else if (work [i] == marked)
+                    {
+                        // duplicate
+                        SLIP_PR1 ("duplicate index: (%ld,%ld)\n", i, j) ;
                         SLIP_FREE_ALL ;
                         return (SLIP_INCORRECT_INPUT) ;
                     }
                     if (pr >= 2)
                     {
-                        SLIP_PRINTF ("  row %"PRId64" : ", i) ;
-                        SLIP_info status = 0;
-                        char *buff = NULL ;
+                        SLIP_PR_LIMIT ;
+                        SLIP_PR2 ("  row %"PRId64" : ", i) ;
 
                         switch ( A->type)
                         {
                             case SLIP_MPZ:
                             {
-                                status = SLIP_mpfr_asprintf(&buff, "%Zd \n", A->x.mpz[p]);
-                                if (status >= 0) SLIP_PRINTF("%s", buff);
-                                SLIP_mpfr_free_str (buff);
+                                status = SLIP_mpfr_asprintf(&buff, "%Zd \n",
+                                    A->x.mpz[p]);
+                                if (status >= 0)
+                                {
+                                    SLIP_PR2("%s", buff);
+                                    SLIP_mpfr_free_str (buff);
+                                }
                                 break;
                             }
                             case SLIP_MPQ:
                             {
-                                status = SLIP_mpfr_asprintf(&buff,"%Qd \n", A->x.mpq[p]);
-                                if (status >= 0) SLIP_PRINTF("%s", buff);
-                                SLIP_mpfr_free_str (buff);
+                                status = SLIP_mpfr_asprintf(&buff,"%Qd \n",
+                                    A->x.mpq[p]);
+                                if (status >= 0)
+                                {
+                                    SLIP_PR2("%s", buff);
+                                    SLIP_mpfr_free_str (buff);
+                                }
                                 break;
                             }
                             case SLIP_MPFR:
                             {
                                 status = SLIP_mpfr_asprintf(&buff, "%.*Rf \n",
                                     prec, A->x.mpfr [p]);
-                                if (status >= 0) SLIP_PRINTF("%s", buff);
-                                SLIP_mpfr_free_str (buff);
+                                if (status >= 0) 
+                                {
+                                    SLIP_PR2("%s", buff);
+                                    SLIP_mpfr_free_str (buff);
+                                }
                                 break;
                             }
                             case SLIP_FP64:
                             {
-                                SLIP_PRINTF ("%lf \n", A->x.fp64[p]);
+                                SLIP_PR2 ("%lf \n", A->x.fp64[p]);
                                 break;
                             }
                             case SLIP_INT64:
                             {
-                                SLIP_PRINTF ("%ld \n", A->x.int64[p]);
+                                SLIP_PR2 ("%ld \n", A->x.int64[p]);
                                 break;
                             }
                         }
@@ -209,7 +279,7 @@ SLIP_info SLIP_matrix_check     // returns a SLIP_LU status code
                             return (status) ;
                         }
                     }
-                    mark [i] = marked ;
+                    work [i] = marked ;
                 }
             }
         }
@@ -236,68 +306,69 @@ SLIP_info SLIP_matrix_check     // returns a SLIP_LU status code
                 return (SLIP_INCORRECT_INPUT) ;
             }
 
-            // allocate workspace to check for duplicates
-            bmark = (bool *) SLIP_calloc (m*n, sizeof (bool)) ; // FIXME
-            if (bmark == NULL)
-            {
-                // out of memory
-                SLIP_PR1 ("out of memory\n") ;
-                SLIP_FREE_ALL;
-                return (SLIP_OUT_OF_MEMORY) ;
-            }
+            //------------------------------------------------------------------
+            // print each entry as "Ai Aj Ax"
+            //------------------------------------------------------------------
 
-            //------------------------------------------------------------------
-            // check for duplicate and print each entry as "Ai Aj Ax"
-            //------------------------------------------------------------------
             for (p = 0 ; p < nz ; p++)
             {
                 i = Ai[p];
                 j = Aj[p];
-                if (i < 0 || i >= m || j < 0 || j >= n || bmark [j*m+i])
+                if (i < 0 || i >= m || j < 0 || j >= n)
                 {
-                    // row indices out of range, or duplicate
+                    // row indices out of range
                     SLIP_PR1 ("invalid index\n") ;
                     SLIP_FREE_ALL ;
                     return (SLIP_INCORRECT_INPUT) ;
                 }
                 if (pr >= 2)
                 {
-                    SLIP_PRINTF ("  %"PRId64" %"PRId64" : ", i, j) ;
-                    SLIP_info status = 0;
-                    char* buff = NULL ;
+                    SLIP_PR_LIMIT ;
+                    SLIP_PR2 ("  %"PRId64" %"PRId64" : ", i, j) ;
 
                     switch ( A->type)
                     {
                         case SLIP_MPZ:
                         {
-                            status = SLIP_mpfr_asprintf(&buff, "%Zd \n", A->x.mpz [p]);
-                            if (status >= 0) SLIP_PRINTF("%s", buff);
-                            SLIP_mpfr_free_str (buff);
+                            status = SLIP_mpfr_asprintf(&buff, "%Zd \n",
+                                A->x.mpz [p]);
+                            if (status >= 0) 
+                            {
+                                SLIP_PR2("%s", buff);
+                                SLIP_mpfr_free_str (buff);
+                            }
                             break;
                         }
                         case SLIP_MPQ:
                         {
-                            status = SLIP_mpfr_asprintf (&buff,"%Qd \n", A->x.mpq [p]);
-                            if (status >= 0) SLIP_PRINTF("%s", buff);
-                            SLIP_mpfr_free_str (buff);
+                            status = SLIP_mpfr_asprintf (&buff,"%Qd \n",
+                                A->x.mpq [p]);
+                            if (status >= 0)  
+                            {   
+                                SLIP_PR2("%s", buff); 
+                                SLIP_mpfr_free_str (buff); 
+                            }
                             break;
                         }
                         case SLIP_MPFR:
                         {
                             status = SLIP_mpfr_asprintf(&buff, "%.*Rf \n",
                                 prec, A->x.mpfr [p]);
-                            if (status >= 0) SLIP_PRINTF("%s", buff);
-                            SLIP_mpfr_free_str (buff);
+                            if (status >= 0)  
+                            {   
+                                SLIP_PR2("%s", buff); 
+                                SLIP_mpfr_free_str (buff); 
+                            }
                             break;
                         }
                         case SLIP_FP64:
                         {
-                            SLIP_PRINTF ("%lf \n", A->x.fp64[p]);
+                            SLIP_PR2 ("%lf \n", A->x.fp64[p]);
                             break;
                         }
                         case SLIP_INT64:
                         {
-                            SLIP_PRINTF ("%ld \n", A->x.int64[p]);
+                            SLIP_PR2 ("%ld \n", A->x.int64[p]);
                             break;
                         }
                     }
@@ -308,8 +379,47 @@ SLIP_info SLIP_matrix_check     // returns a SLIP_LU status code
                         return (status) ;
                     }
                 }
-                bmark [i+j*m] = true ;      // FIXME
             }
+
+            //------------------------------------------------------------------
+            // check for duplicates
+            //------------------------------------------------------------------
+
+            // allocate workspace to check for duplicates
+            work = (int64_t *) SLIP_malloc (nz * 2 * sizeof (int64_t)) ;
+            if (work == NULL)
+            {
+                // out of memory
+                SLIP_PR1 ("out of memory\n") ;
+                SLIP_FREE_ALL;
+                return (SLIP_OUT_OF_MEMORY) ;
+            }
+
+            // load the (i,j) indices of the triplets into the workspace
+            for (p = 0 ; p < nz ; p++)
+            {
+                work [2*p  ] = Aj [p] ;
+                work [2*p+1] = Ai [p] ;
+            }
+
+            // sort the (i,j) indices
+            qsort (work, nz, 2 * sizeof (int64_t), compar) ;
+
+            // check for duplicates
+            for (p = 1 ; p < nz ; p++)
+            {
+                int64_t this_j = work [2*p  ] ;
+                int64_t this_i = work [2*p+1] ;
+                int64_t last_j = work [2*(p-1)  ] ;
+                int64_t last_i = work [2*(p-1)+1] ;
+                if (this_j == last_j && this_i == last_i)
+                {
+                    SLIP_PR1 ("duplicate index: (%ld, %ld)\n", this_i, this_j) ;
+                    SLIP_FREE_ALL ;
+                    return (SLIP_INCORRECT_INPUT) ;
+                }
+            }
+
         }
         break;
 
@@ -336,14 +446,14 @@ SLIP_info SLIP_matrix_check     // returns a SLIP_LU status code
 
             for (j = 0 ; j < n ; j++)
             {
+                SLIP_PR_LIMIT ;
                 SLIP_PR2 ("column %"PRId64" :\n", j) ;
                 for (i = 0; i < m; i++)
                 {
                     if (pr >= 2)
                     {
-                        SLIP_PRINTF ("  row %"PRId64" : ", i) ;
-                        SLIP_info status = 0;
-                        char* buff = NULL ;
+                        SLIP_PR_LIMIT ;
+                        SLIP_PR2 ("  row %"PRId64" : ", i) ;
 
                         switch ( A->type)
                         {
@@ -351,40 +461,49 @@ SLIP_info SLIP_matrix_check     // returns a SLIP_LU status code
                             {
                                 status = SLIP_mpfr_asprintf (&buff, "%Zd \n" ,
                                     SLIP_2D(A, i, j, mpz)) ;
-                                if (status >= 0) SLIP_PRINTF("%s", buff);
-                                SLIP_mpfr_free_str (buff);
+                                if (status >= 0)  
+                                {   
+                                    SLIP_PR2("%s", buff); 
+                                    SLIP_mpfr_free_str (buff); 
+                                }
                                 break;
                             }
                             case SLIP_MPQ:
                             {
                                 status = SLIP_mpfr_asprintf (&buff, "%Qd \n",
                                     SLIP_2D(A, i, j, mpq));
-                                if (status >= 0) SLIP_PRINTF("%s", buff);
-                                SLIP_mpfr_free_str (buff);
+                                if (status >= 0)   
+                                {    
+                                    SLIP_PR2("%s", buff);  
+                                    SLIP_mpfr_free_str (buff);  
+                                }
                                 break;
                             }
                             case SLIP_MPFR:
                             {
                                 status = SLIP_mpfr_asprintf (&buff, "%.*Rf \n",
                                     prec, SLIP_2D(A, i, j, mpfr));
-                                if (status >= 0) SLIP_PRINTF("%s", buff);
-                                SLIP_mpfr_free_str (buff);
+                                if (status >= 0)   
+                                {    
+                                    SLIP_PR2("%s", buff);  
+                                    SLIP_mpfr_free_str (buff);  
+                                }
                                 break;
                             }
                             case SLIP_FP64:
                             {
-                                SLIP_PRINTF ("%lf \n", SLIP_2D(A, i, j, fp64));
+                                SLIP_PR2 ("%lf \n", SLIP_2D(A, i, j, fp64));
                                 break;
                             }
                             case SLIP_INT64:
                             {
-                                SLIP_PRINTF ("%ld \n", SLIP_2D(A, i, j, int64));
+                                SLIP_PR2 ("%ld \n", SLIP_2D(A, i, j, int64));
                                 break;
                             }
                         }
                         if (status < 0)
                         {
-                            SLIP_PRINTF (" error: %d\n", status) ;
+                            SLIP_PR2 (" error: %d\n", status) ;
                             return (status) ;
                         }
                     }

@@ -41,7 +41,7 @@
  * 
  */
 //TODO Set consts
-SLIP_info IP_Solve              // solves the linear system LDL' x = b
+IP_Chol_info IP_Solve              // solves the linear system LDL' x = b
 (
     // Output
     SLIP_matrix** x_handle,     // rational solution to the system
@@ -56,7 +56,7 @@ SLIP_info IP_Solve              // solves the linear system LDL' x = b
     SLIP_options* option        // command options
 )
 {
-    SLIP_info ok;
+    IP_Chol_info ok;
     // Check the inputs
     SLIP_REQUIRE(A, SLIP_CSC, SLIP_MPZ);
     SLIP_REQUIRE(A_orig, SLIP_CSC, SLIP_MPZ);

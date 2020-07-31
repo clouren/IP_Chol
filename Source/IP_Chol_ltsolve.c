@@ -17,13 +17,13 @@ return SLIP_OUT_OF_MEMORY;      \
  * On input, L contains the lower triangular matrix. x has the solution
  * to the linear system from forward substitution
  */
-SLIP_info IP_Chol_ltsolve 
+IP_Chol_info IP_Chol_ltsolve 
 (
     SLIP_matrix *L,     // The lower triangular matrix
     SLIP_matrix *x      // Solution vector
 )
 {
-    SLIP_info ok;
+    IP_Chol_info ok;
     // Check input
     SLIP_REQUIRE(L, SLIP_CSC, SLIP_MPZ);
     SLIP_REQUIRE(x, SLIP_DENSE, SLIP_MPZ);

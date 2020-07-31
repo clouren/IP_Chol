@@ -24,7 +24,7 @@
 
 #include "../Include/IP-Chol.h"
 
-int64_t IP_determine_symmetry
+IP_Chol_info IP_determine_symmetry
 (
     SLIP_matrix* A,
     bool exhaustive
@@ -42,9 +42,9 @@ int64_t IP_determine_symmetry
     {
         if (T->i[j] != A->i[j])
         {
-            printf("\nError, matrix is not symmetric\n");
+            //printf("\nError, matrix is not symmetric\n");
             SLIP_matrix_free(&T,NULL);
-            return 1;
+            return IP_Chol_UNSYMMETRIC;
         }
     }
     
@@ -53,9 +53,9 @@ int64_t IP_determine_symmetry
     {
         if (T->p[j] != A->p[j])
         {
-            printf("\nError, matrix is not symmetric\n");
+            //printf("\nError, matrix is not symmetric\n");
             SLIP_matrix_free(&T,NULL);
-            return 1;
+            return IP_Chol_UNSYMMETRIC;
         }
     }
 
@@ -71,7 +71,7 @@ int64_t IP_determine_symmetry
             {
                 printf("\nError, pattern is symmetric, values are not\n");
                 SLIP_matrix_free(&T,NULL);
-                return 1;
+                return IP_Chol_UNSYMMETRIC;
             }
         }
     }

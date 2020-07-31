@@ -30,14 +30,14 @@
 
 #include "../Include/IP-Chol.h"
 
-SLIP_info IP_forward_sub
+IP_Chol_info IP_forward_sub
 (
     SLIP_matrix *L,         // lower triangular matrix
     SLIP_matrix *x,         // right hand side matrix of size n*numRHS
     SLIP_matrix *rhos       // sequence of pivots used in factorization
 )
 {
-    SLIP_info ok;
+    IP_Chol_info ok;
     int64_t  i, j, p, k, n, m, mnew, **h;
     // Size of x vector
     n = L->n;

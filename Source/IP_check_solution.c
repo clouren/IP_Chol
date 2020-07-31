@@ -20,7 +20,7 @@
 
 #include "../Include/IP-Chol.h"
 
-SLIP_info IP_check_solution
+IP_Chol_info IP_check_solution
 (
     const SLIP_matrix *A,         // Input matrix
     const SLIP_matrix *x,         // Solution vectors
@@ -33,7 +33,7 @@ SLIP_info IP_check_solution
     // check int64_t*puts
     //--------------------------------------------------------------------------
 
-    SLIP_info ok, info = SLIP_OK ;
+    IP_Chol_info ok, info = IP_Chol_OK ;
     SLIP_REQUIRE (A, SLIP_CSC,   SLIP_MPZ) ;
     SLIP_REQUIRE (x, SLIP_DENSE, SLIP_MPQ) ;
     SLIP_REQUIRE (b, SLIP_DENSE, SLIP_MPZ) ;

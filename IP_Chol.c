@@ -31,7 +31,7 @@
 #define DEMO_OK(method)                 \
 {                                       \
     ok = method ;                       \
-    if (ok != SLIP_OK)                  \
+    if (ok != IP_Chol_OK)               \
     {                                   \
         IP_determine_error(ok);         \
         FREE_WORKSPACE ;                \
@@ -68,6 +68,9 @@ int main( int argc, char* argv[] )
     SLIP_matrix* A2 = NULL;
     Sym_chol* S2 = NULL;
     SLIP_matrix* x = NULL;
+    SLIP_matrix* L2 = NULL;
+    SLIP_matrix* rhos2 = NULL;
+    S2 = (Sym_chol*) SLIP_malloc(1* sizeof(Sym_chol));
     
     // Default options. May be changed in SLIP_LU_config.h
     SLIP_options *option = SLIP_create_default_options();
@@ -131,11 +134,10 @@ int main( int argc, char* argv[] )
     clock_t start_sym = clock();
     
     // TODO Handle error conditions here.
-    int64_t test = 0;
-    //test = IP_determine_symmetry(A, false);    // Determine symmetry just with nonzero pattern
-    test = IP_determine_symmetry(A, true);    // Determine symmetry with nonzero pattern and values
+    
+    //DEMO_OK(IP_determine_symmetry(A, false));    // Determine symmetry just with nonzero pattern
+    DEMO_OK(IP_determine_symmetry(A, true));    // Determine symmetry with nonzero pattern and values
         
-    if (test == 1) return 0;
     
     clock_t end_sym = clock();
     //--------------------------------------------------------------------------
@@ -159,11 +161,6 @@ int main( int argc, char* argv[] )
     // IP Chol Factorization
     //--------------------------------------------------------------------------
     clock_t start_factor = clock();
-    
-    S2 = (Sym_chol*) SLIP_malloc(1* sizeof(Sym_chol));
-    
-    SLIP_matrix* L2 = NULL;
-    SLIP_matrix* rhos2 = NULL;
     
     DEMO_OK( IP_Chol_Factor( A2, &L, S2, &rhos, left, option));
 //    L->m = n;

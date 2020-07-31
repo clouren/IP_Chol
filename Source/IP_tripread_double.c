@@ -17,14 +17,14 @@
  * This is only used for Demo purposes
  */
 
-SLIP_info IP_tripread_double
+IP_Chol_info IP_tripread_double
 (
     SLIP_matrix **A_handle,     // Matrix to be populated
     FILE* file,                 // file to read from (must already be open)
     SLIP_options* option        // Command options
 )
 {
-    SLIP_info info ;
+    IP_Chol_info info ;
     if (A_handle == NULL || file == NULL)
     {
         printf ("invalid input\n") ;
@@ -88,6 +88,8 @@ SLIP_info IP_tripread_double
 
     // At this point, A is a double triplet matrix. We make a copy of it with C
     // C is a CSC matrix with mpz entries
+    //option->print_level = 3;
+   // SLIP_matrix_check(A,option);
     
     SLIP_matrix* C = NULL;
     SLIP_matrix_copy(&C, SLIP_CSC, SLIP_MPZ, A, option);

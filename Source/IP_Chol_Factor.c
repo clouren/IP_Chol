@@ -43,7 +43,7 @@
  * option:      Command options
  * 
  */
-SLIP_info IP_Chol_Factor        // performs an integer-preserving Cholesky factorization
+IP_Chol_info IP_Chol_Factor        // performs an integer-preserving Cholesky factorization
 (
     SLIP_matrix* A,             // matrix to be factored
     SLIP_matrix** L_handle,     // lower triangular matrix
@@ -53,7 +53,7 @@ SLIP_info IP_Chol_Factor        // performs an integer-preserving Cholesky facto
     SLIP_options* option        // command options
 )
 {
-    SLIP_info ok;
+    IP_Chol_info ok;
     //--------------------------------------------------------------------------
     // Check inputs
     //--------------------------------------------------------------------------

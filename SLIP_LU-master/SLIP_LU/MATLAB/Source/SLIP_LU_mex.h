@@ -14,13 +14,29 @@
 #include "slip_internal.h"
 #include "matrix.h"
 
-
-#define SLIP_MEX_OK(method)         \
-{                                   \
-    status = method;                \
-    slip_mex_error(status);         \
+#define SLIP_MEX_OK(method)             \
+{                                       \
+    status = method ;                   \
+    if (status != SLIP_OK)              \
+    {                                   \
+        slip_mex_error (status, "") ;   \
+    }                                   \
 }
 
+typedef enum
+{
+    SLIP_SOLUTION_DOUBLE = 0,   // x as double
+    SLIP_SOLUTION_VPA = 1,      // return x as vpa
+    SLIP_SOLUTION_CHAR = 2      // x as cell strings
+}
+SLIP_solution ;
+
+typedef struct slip_mex_options
+{
+    SLIP_solution solution ;    // how should x be returned to MATLAB
+    int32_t digits ;            // # of digits to use for vpa
+}
+slip_mex_options ;
 
 /* Purpose: A GMP reallocation function
  * This allows GMP to use MATLAB's default realloc function
@@ -41,26 +57,11 @@ void SLIP_gmp_mex_free
     size_t a    // Size
 );
 
-void slip_check_input
-(
-    const mxArray * input [],   // The MATLAB inputs
-    int nargin                  // # of input arguments
-) ;
-
 void slip_get_matlab_options
 (
-    SLIP_options* option,  // Control parameters
-    const mxArray* input   // The input options from MATLAB interface
-);
-
-
-/* Purpose: convert mwIndex* array to int64_t* array
- */
-void slip_mwIndex_to_int64
-(
-    int64_t* y,
-    mwIndex* x,
-    mwSize n
+    SLIP_options* option,           // Control parameters
+    slip_mex_options *mexoptions,   // MATLAB-specific options
+    const mxArray* input            // options struct, may be NULL
 ) ;
 
 // Purpose: This function checks if the array x contains Inf's, NaN's, or
@@ -75,10 +76,9 @@ bool slip_mex_check_for_inf     // true if x can be represented as int64_t
 /* Purpose: This function reads in the A matrix and right hand side vectors. */
 void slip_mex_get_A_and_b
 (
-    SLIP_matrix **A_handle,  // Internal SLIP Mat stored in CSC
-    SLIP_matrix **b_handle,   // mpz matrix used internally
-    const mxArray* pargin[], // The input A matrix and options
-    int nargin,               // Number of input to the mexFunction
+    SLIP_matrix **A_handle,     // Internal SLIP Mat stored in CSC
+    SLIP_matrix **b_handle,     // mpz matrix used internally
+    const mxArray* pargin[],    // The input A matrix and options
     SLIP_options* option
 ) ;
 
@@ -86,7 +86,8 @@ void slip_mex_get_A_and_b
  */
 void slip_mex_error
 (
-    SLIP_info status
+    SLIP_info status,
+    char *message
 ) ;
 
 #endif
