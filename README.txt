@@ -1,6 +1,6 @@
 This code is for exactly solving sparse SPD linear systems
 
-It comprises both an Integer Preserving Up-Looking and Integer-Preserving Left-Looking 
+It comprises both an Roundoff-Error-Free (REF) Up-Looking and REF Left-Looking 
 Cholesky factorization.
 
 This code is dependent on the following packages:
@@ -19,3 +19,7 @@ This code is dependent on the following packages:
    may also be independently obtained at
       https://github.com/clouren/SLIP_LU
       http://www.suitesparse.com
+
+Authors:
+    Christopher Lourenco
+    Erick Moreno-Centeno

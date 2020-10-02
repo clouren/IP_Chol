@@ -1,14 +1,13 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_tripread_double: Read in a triplet matrix
+// REF_Chol/IP_tripread_double: Read in a triplet matrix
 //------------------------------------------------------------------------------
 
-// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
-// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
-// IP_Chol/License for the license.
+// REF Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// Texas A&M University.  All Rights Reserved.  See REF_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
-#include "../Include/IP-Chol.h"
+#include "../Include/REF-Chol.h"
 
 /* Purpose: This function reads in a matrix stored in a triplet format
  * with double entries. The format used can be seen in any of the

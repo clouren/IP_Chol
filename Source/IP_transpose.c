@@ -1,16 +1,16 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_transpose: Transpose a matrix
+// REF_Chol/IP_transpose: Transpose a matrix
 //------------------------------------------------------------------------------
 
-// IP_Chol: (c) 2020, Chris Lourenco, Erick Moreno-Centeno, Timothy A. Davis, 
-// Texas A&M University.  All Rights Reserved.  See IP_Chol/License for the license.
+// REF Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// Texas A&M University.  All Rights Reserved.  See REF_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
 #define FREE_WORKSPACE  \
     SLIP_FREE(w);       \
 
-#include "../Include/IP-Chol.h"
+#include "../Include/REF-Chol.h"
     
 /* Purpose: This function sets C = A' 
  * C_handle is NULL on input. On output, C_handle contains a pointer to A'

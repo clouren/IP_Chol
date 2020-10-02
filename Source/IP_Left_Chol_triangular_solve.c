@@ -1,14 +1,13 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_Left_Chol_triangular_solve: sparse symmetric left-looking triangular solve
+// REF_Chol/IP_Left_Chol_triangular_solve: sparse symmetric left-looking triangular solve
 //------------------------------------------------------------------------------
 
-// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
-// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
-// IP_Chol/License for the license.
+// REF Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// Texas A&M University.  All Rights Reserved.  See REF_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
-#include "../Include/IP-Chol.h"
+#include "../Include/REF-Chol.h"
 
 /* Purpose: This function performs the symmetric sparse REF triangular solve for
  * the left looking Cholesky factorization. i.e., LD x = A(:,k). At the end of this function,
@@ -75,12 +74,6 @@ IP_Chol_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular
      * the vector xi contains the indices of the first k-1 nonzeros in column
      * k of L 
      */
-    //TODO Do we really have to do a reach again here? We have this information 
-    // already in L we should be able to extract row k of L without doing a reach
-    // Look at how UMFPACK or Graphblas accesses the kth row of a matrix and implement that here.
-    // Alternatively, it may be valuable to just construct L' and use it's indices to get the kth 
-    // row of L at every iteration. it costs more operations initially but may be more efficient 
-    // at the end of the day
     top = IP_Chol_ereach(A, k, parent, xi, c);
     
     j = top; // Store where the first k-1 nonzeros end
@@ -100,7 +93,6 @@ IP_Chol_info IP_Left_Chol_triangular_solve // performs the sparse REF triangular
     
     // Now we obtain the values of the first k-1 entries of x which already
     // reside in the rows of L
-    // Look at TODO above, can this be done more efficiently?
     for (i = j; i < n; i++)
     {
         m = xi[i];

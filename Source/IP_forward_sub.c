@@ -1,10 +1,9 @@
 ///------------------------------------------------------------------------------
-// IP_Chol/IP_forward_sub: Solve the system LDx = b
+// REF_Chol/IP_forward_sub: Solve the system LDx = b
 //------------------------------------------------------------------------------
 
-// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
-// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
-// IP_Chol/License for the license.
+// REF Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// Texas A&M University.  All Rights Reserved.  See REF_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
@@ -28,7 +27,7 @@
     SLIP_FREE(h);                      \
 }
 
-#include "../Include/IP-Chol.h"
+#include "../Include/REF-Chol.h"
 
 IP_Chol_info IP_forward_sub
 (

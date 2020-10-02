@@ -1,15 +1,13 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_Pre_Left_Factor: Symbolic left-looking Chol
+// REF_Chol/IP_Pre_Left_Factor: Symbolic left-looking Chol
 //------------------------------------------------------------------------------
 
-// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
-// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
-// IP_Chol/License for the license.
-
+// REF Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// Texas A&M University.  All Rights Reserved.  See REF_Chol/License for the license.
 //------------------------------------------------------------------------------
 
 
-#include "../Include/IP-Chol.h"
+#include "../Include/REF-Chol.h"
 
 /* Purpose: This function performs a symbolic left-looking factorization
  * It allocates the memory for the L matrix and allocates the individual

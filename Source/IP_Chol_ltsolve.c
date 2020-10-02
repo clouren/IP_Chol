@@ -1,17 +1,16 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_Chol_ltsolve: Solve the system L' x = b for Cholesky
+// REF_Chol/IP_Chol_ltsolve: Solve the system L' x = b for Cholesky
 //------------------------------------------------------------------------------
 
-// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
-// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
-// IP_Chol/License for the license.
+// REF Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// Texas A&M University.  All Rights Reserved.  See REF_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
 #define FREE_WORKSPACE          \
 return SLIP_OUT_OF_MEMORY;      \
 
-#include "../Include/IP-Chol.h"
+#include "../Include/REF-Chol.h"
 
 /* Purpose: This solves the system L'x = b for Cholesky factorization 
  * On input, L contains the lower triangular matrix. x has the solution

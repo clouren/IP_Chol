@@ -1,11 +1,10 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_check_solution: check solution to Ax=b
+// REF_Chol/IP_check_solution: check solution to Ax=b
 //------------------------------------------------------------------------------
 //
 //
-// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
-// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
-// IP_Chol/License for the license.
+// REF Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// Texas A&M University.  All Rights Reserved.  See REF_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
@@ -18,7 +17,7 @@
     SLIP_MPQ_CLEAR(temp);                   \
     SLIP_matrix_free(&b2, NULL);
 
-#include "../Include/IP-Chol.h"
+#include "../Include/REF-Chol.h"
 
 IP_Chol_info IP_check_solution
 (

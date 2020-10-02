@@ -1,17 +1,11 @@
-IP-Chol: Integer-Preserving Cholesky Factorization
+REF-Chol: Integer-Preserving Cholesky Factorization
 
-Copyright (c) 2020, Christopher Lourenco, Erick Moreno-Centeno, 
-and Tim Davis
-https://github.com/clouren/SLIP_LU
-http://suitesparse.com
-
-Contact Chris Lourenco (chrisjlourenco@gmail.com) or Tim Davis
-(timdavis@aldenmath.com or DrTimothyAldenDavis@gmail.com) for a commercial
-license.
+Copyright (c) 2020, Christopher Lourenco and Erick Moreno-Centeno
+https://github.com/clouren/IP_Chol
 
 --------------------------------------------------------------------------------
 
-IP-Chol is free software; you can redistribute it and/or modify
+REF-Chol is free software; you can redistribute it and/or modify
 it under the terms of either:
 
   * the GNU Lesser General Public License as published by the Free
@@ -26,7 +20,7 @@ or
 
 or both in parallel, as here.
 
-IP-Chol is distributed in the hope that it will be useful, but
+REF-Chol is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
 for more details.

@@ -1,14 +1,13 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_Up_Chol_triangular_solve: Sparse symmetric REF Triangular solve
+// REF_Chol/IP_Up_Chol_triangular_solve: Sparse symmetric REF Triangular solve
 //------------------------------------------------------------------------------
 
-// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
-// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
-// IP_Chol/License for the license.
+// REF Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// Texas A&M University.  All Rights Reserved.  See REF_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
-#include "../Include/IP-Chol.h"
+#include "../Include/REF-Chol.h"
 
 
 /* Purpose: This function performs the symmetric sparse REF triangular solve for
@@ -41,8 +40,6 @@
  * x:               Solution of linear system. Undefined on input, on output
  *                  contains the kth row of L.
  */
-
-// TODO Properly set which of these input/output are const
 
 IP_Chol_info IP_Up_Chol_triangular_solve // performs the sparse REF triangular solve
 (

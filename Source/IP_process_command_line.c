@@ -1,14 +1,13 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_process_command_lint64_t*e: Process command lint64_t*e for demo files
+// REF_Chol/IP_process_command_lint64_t*e: Process command lint64_t*e for demo files
 //------------------------------------------------------------------------------
 
-// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
-// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
-// IP_Chol/License for the license.
+// REF Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// Texas A&M University.  All Rights Reserved.  See REF_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
-#include "../Include/IP-Chol.h"
+#include "../Include/REF-Chol.h"
 
 /* Purpose: This processes the command line for user specified options */
 IP_Chol_info IP_process_command_line //processes the command line

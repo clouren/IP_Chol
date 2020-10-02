@@ -1,14 +1,13 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_Chol_permute_A: Symmetric permutation of matrix A
+// REF_Chol/IP_Chol_permute_A: Symmetric permutation of matrix A
 //------------------------------------------------------------------------------
 
-// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
-// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
-// IP_Chol/License for the license.
+// REF Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// Texas A&M University.  All Rights Reserved.  See REF_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
-#include "../Include/IP-Chol.h"
+#include "../Include/REF-Chol.h"
 
 /* Purpose: Permute the matrix A and return A2 = PAP */
 IP_Chol_info IP_Chol_permute_A

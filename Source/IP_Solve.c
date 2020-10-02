@@ -1,10 +1,9 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_Solve: Solve the linear system after factorization
+// REF_Chol/IP_Solve: Solve the linear system after factorization
 //------------------------------------------------------------------------------
 
-// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
-// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
-// IP_Chol/License for the license.
+// REF Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// Texas A&M University.  All Rights Reserved.  See REF_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
@@ -14,7 +13,7 @@
     SLIP_MPQ_CLEAR(scale);                  \
     SLIP_MPQ_CLEAR(det2);                   \
 
-#include "../Include/IP-Chol.h"
+#include "../Include/REF-Chol.h"
     
 /* Purpose: This function solves the linear system LDL' x = b.*
  *
@@ -40,7 +39,6 @@
  * option:          Command options
  * 
  */
-//TODO Set consts
 IP_Chol_info IP_Solve              // solves the linear system LDL' x = b
 (
     // Output

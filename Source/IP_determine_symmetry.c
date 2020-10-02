@@ -1,10 +1,9 @@
 ///------------------------------------------------------------------------------
-// IP_Chol/IP_determine_symmetry: This function determines if the input matrix is symmetric.
+// REF_Chol/IP_determine_symmetry: This function determines if the input matrix is symmetric.
 //------------------------------------------------------------------------------
 
-// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
-// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
-// IP_Chol/License for the license.
+// REF Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// Texas A&M University.  All Rights Reserved.  See REF_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
@@ -22,7 +21,7 @@
  * 
  */
 
-#include "../Include/IP-Chol.h"
+#include "../Include/REF-Chol.h"
 
 IP_Chol_info IP_determine_symmetry
 (

@@ -1,14 +1,13 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_Chol: Solve an SPD linear system using left or up chol
+// REF_Chol/REF_Chol: Solve an SPD linear system using left or up chol
 //------------------------------------------------------------------------------
 
-// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
-// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
-// IP_Chol/License for the license.
+// REF Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// Texas A&M University.  All Rights Reserved.  See REF_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
-/* Include the Integer-preserving Cholesky routines */
+/* Include the REF Cholesky routines */
 
 #define FREE_WORKSPACE                  \
 {                                       \
@@ -40,14 +39,14 @@
 }
 
 
-# include "./Include/IP-Chol.h"
+# include "./Include/REF-Chol.h"
 
 
 int main( int argc, char* argv[] )
 {
 
     //--------------------------------------------------------------------------
-    // Prior to using IP-Chol, its environment must be initialized. It is 
+    // Prior to using REF-Chol, its environment must be initialized. It is 
     // initialized using the SLIP LU enviroment, the SLIP_initialize function.
     //--------------------------------------------------------------------------
     
@@ -153,7 +152,6 @@ int main( int argc, char* argv[] )
     // Debugging code to check the matrix if desired
     option->print_level = 2;
     option->check = true;
-    //SLIP_matrix_check(A2,option);
     
     //--------------------------------------------------------------------------
     // IP Chol Factorization
@@ -161,7 +159,6 @@ int main( int argc, char* argv[] )
     clock_t start_factor = clock();
     
     DEMO_OK( IP_Chol_Factor( A2, &L, S2, &rhos, left, option));
-//    L->m = n;
 
     clock_t end_factor = clock();
      
@@ -186,7 +183,6 @@ int main( int argc, char* argv[] )
     double t_factor = (double) (end_factor - start_factor) / CLOCKS_PER_SEC;
     double t_solve =  (double) (end_solve - start_solve) / CLOCKS_PER_SEC;
 
-    // TODO: inherit the SLIP LU printing functions for error handling etc
     if (left == true)
         printf("\nLeft-looking Factorization stats:");
     else

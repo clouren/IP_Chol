@@ -14,18 +14,18 @@ LDLIBS += -lm -lgmp -lmpfr -lcolamd -lamd -L./SLIP_LU-master/lib/ -lsliplu
 CS = ./Lib/libipchol.a  $(LDLIBS)
 
 
-all: lib IP_Chol IP_Chol_debug
-	- ./IP_Chol
+all: lib REF_Chol REF_Chol_debug
+	- ./REF_Chol
 
 lib:
 	( cd ./Lib ; $(MAKE) )
 
-IP_Chol_debug: lib IP_Chol.c Makefile
-	$(CC) $(LDFLAGS) $(CF) $(I) -g -o IP_Chol_debug IP_Chol.c $(CS) 
+REF_Chol_debug: lib REF_Chol.c Makefile
+	$(CC) $(LDFLAGS) $(CF) $(I) -g -o REF_Chol_debug REF_Chol.c $(CS) 
 
 
-IP_Chol: lib IP_Chol.c Makefile
-	$(CC) $(LDFLAGS) $(CF) $(I) -o IP_Chol IP_Chol.c $(CS) 
+REF_Chol: lib REF_Chol.c Makefile
+	$(CC) $(LDFLAGS) $(CF) $(I) -o REF_Chol REF_Chol.c $(CS) 
 
 clean:
 	- $(RM) *.o
@@ -33,4 +33,4 @@ clean:
 purge: distclean
 
 distclean: clean
-	- $(RM) -r IP_Chol IP_Chol_debug *.a *.dSYM *.obj *.dll
+	- $(RM) -r REF_Chol REF_Chol_debug *.a *.dSYM *.obj *.dll

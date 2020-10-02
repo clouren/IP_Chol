@@ -1,16 +1,14 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_cumsum_chol: Cumulative sum of a vector for Cholesky factorization
+// REF_Chol/IP_cumsum_chol: Cumulative sum of a vector for Cholesky factorization
 //------------------------------------------------------------------------------
 
-// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
-// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
-// IP_Chol/License for the license.
+// REF Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// Texas A&M University.  All Rights Reserved.  See REF_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
-//TODO Move this to a utility function for SLIP LU & IP Chol?
 
-#include "../Include/IP-Chol.h"
+#include "../Include/REF-Chol.h"
 
 /* Purpose: p [0..n] = cumulative sum of c [0..n-1], and then copy p [0..n-1] into c 
    From Tim Davis SuiteSparse */

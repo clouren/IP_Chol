@@ -32,9 +32,9 @@ CS = IP_check_solution.o  IP_Chol_leaf.o  IP_Chol_tdfs.o IP_forward_sub.o IP_pro
      IP_Left_Chol_triangular_solve.o  IP_Sym_chol_free.o  IP_Up_Chol_triangular_solve.o \
      IP_Chol_etree.o IP_Chol_post.o IP_determine_symmetry.o  IP_Pre_Left_Factor.o IP_transpose.o IP_Chol_Factor.o 
 
-$(CS): ../Include/IP-Chol.h Makefile
+$(CS): ../Include/REF-Chol.h Makefile
 
-%.o: ../Source/%.c ../Include/IP-Chol.h 
+%.o: ../Source/%.c ../Include/REF-Chol.h 
 	$(CC) $(CF) $(I) -c $<
 
 static: $(AR_TARGET)

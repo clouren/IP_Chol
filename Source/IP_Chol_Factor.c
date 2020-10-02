@@ -1,10 +1,9 @@
 //------------------------------------------------------------------------------
-// IP_Chol/IP_Chol_Factor: Integer preserving Cholesky factorization
+// REF_Chol/IP_Chol_Factor: Integer preserving Cholesky factorization
 //------------------------------------------------------------------------------
 
-// IP Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
-// and Timothy A. Davis, Texas A&M University.  All Rights Reserved.  See
-// IP_Chol/License for the license.
+// REF Chol: (c) 2020, Chris Lourenco, United States Naval Academy, Erick Moreno-Centeno
+// Texas A&M University.  All Rights Reserved.  See REF_Chol/License for the license.
 
 //------------------------------------------------------------------------------
 
@@ -16,7 +15,7 @@
     SLIP_FREE(post);                \
 
 
-#include "../Include/IP-Chol.h"
+#include "../Include/REF-Chol.h"
     
 /* Purpose: This function performs the integer preserving Cholesky factorization.
  * It allows either the left-looking or up-looking integer-preserving Cholesky factorization.
@@ -177,8 +176,6 @@ IP_Chol_info IP_Chol_Factor        // performs an integer-preserving Cholesky fa
     
     if (left)
     {
-        //TODO: Here may be where it would be valuable to also construct L'
-        // and use it in the ensuing factorization.
         OK(IP_Pre_Left_Factor(A, &L, xi, S->parent, S, c));
     }
     else

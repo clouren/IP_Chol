@@ -1,9 +1,9 @@
 // This software package exactly solves a sparse symmetric positive definite (SPD)
-// system of linear equations using one of two Integer-Preserving Cholesky factorizations. 
+// system of linear equations using one of two Roundoff-Error-Free (REF) Cholesky factorizations. 
 // This code accompanies the paper (submitted to SIAM Journal on Matrix Analysis and
 // Applications (SIMAX))
 //
-//    "A Sparse Integer-Preserving Cholesky Factorization Computed in Time Proportional
+//    "A Sparse Roundoff-Error-Free Cholesky Factorization Computed in Time Proportional
 //     to Arithmetic Work", C. Lourenco and E. Moreno-Centeno under submission, SIMAX.
 
 //    If you use this code, you must first download and install the GMP, 
@@ -13,7 +13,7 @@
 //              https://gmplib.org/
 //              http://www.mpfr.org/
 //
-//   SLIP LU, AMD, and COLAMD are distributed along with IP-Chol; however,
+//   SLIP LU, AMD, and COLAMD are distributed along with REF-Chol; however,
 //   they may be independently obtained at:
 //
 //   SLIP LU can be found at:
@@ -31,7 +31,7 @@
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-//    Christopher Lourenco, Erick Moreno-Centeno, and Timothy Davis
+//    Christopher Lourenco, Erick Moreno-Centeno
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -39,7 +39,7 @@
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-//    IP-Chol is free software; you can redistribute it and/or modify
+//    REF-Chol is free software; you can redistribute it and/or modify
 //     it under the terms of either:
 //
 //        * the GNU Lesser General Public License as published by the
@@ -56,8 +56,8 @@
 //
 //    See license.txt for license info.
 //
-// This software is copyright by Christopher Lourenco, Erick
-// Moreno-Centeno and Timothy A. Davis. All Rights Reserved.
+// This software is copyright by Christopher Lourenco and Erick
+// Moreno-Centeno. All Rights Reserved.
 //
 
 //------------------------------------------------------------------------------
@@ -114,10 +114,10 @@
 
 
 
-#ifndef IP_Chol
-#define IP_Chol
+#ifndef REF_Chol
+#define REF_Chol
 
-// IP-Chol inherits many functions, GMP wrappers, etc from SLIP LU. Indeed, IP-Chol is part
+// REF-Chol inherits many functions, GMP wrappers, etc from SLIP LU. Indeed, REF-Chol is part
 // of a suite of exact, integer-preserving sparse matrix software.
 // It also inherits the same set of external header files as SLIP LU which includes:
 //      <stdlib.h>
@@ -130,11 +130,7 @@
 //      <gmp.h>
 //      <mpfr.h>
 
-//TODO Find a way to handle this properly...perhaps include some of the SLIP LU headers
-// in Suitesparse_config.h OR make a new master folder called "Exact Factorization" and 
-// have a Suitesparse_config style header
 #include "../SLIP_LU-master/SLIP_LU/Include/SLIP_LU.h"
-
 #include <math.h>
 #include <time.h>
 #include <stdint.h>
@@ -148,15 +144,14 @@
 //------------------------------------------------------------------------------
 
 // Current version of the code
-#define IP_CHOL_VERSION "1.0.0"
-#define IP_CHOL_VERSION_MAJOR 1
-#define IP_CHOL_VERSION_MINOR 0
-#define IP_CHOL_VERSION_SUB   0
+#define REF_CHOL_VERSION "1.0.0"
+#define REF_CHOL_VERSION_MAJOR 1
+#define REF_CHOL_VERSION_MINOR 0
+#define REF_CHOL_VERSION_SUB   0
 
 // Note that IP-Chol inherits the same error and ordering codes as SLIP LU, thus they are omitted here
 
 // The below macros are copied from SLIP_LU.h.
-// TODO Put this in the global header file.
 #define SLIP_FREE(p)                        \
 {                                           \
     SLIP_free (p) ;                         \
@@ -346,8 +341,6 @@ IP_Chol_info ;
 // pointers.
 //------------------------------------------------------------------------------
 
-//TODO In each function deleniate input/output
-
 typedef struct Sym_chol
 {
     int64_t* pinv;      // Row permutation
@@ -425,8 +418,6 @@ int64_t IP_Chol_leaf
     int64_t* jleaf
 );
 
-//TODO Insert descripiton
-/* Purpose: Something*/
 int64_t *IP_Chol_counts 
 (
     SLIP_matrix *A, 

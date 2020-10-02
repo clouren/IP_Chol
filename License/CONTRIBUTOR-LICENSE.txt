@@ -1,6 +1,6 @@
-IP-Chol Individual Contributor License Agreement
+REF-Chol Individual Contributor License Agreement
 
-Thank you for your interest in contributing to IP-Chol ("We" or "Us").
+Thank you for your interest in contributing to REF-Chol ("We" or "Us").
 
 This contributor agreement ("Agreement") documents the rights granted by
 contributors to Us. To make this document effective, please sign it and send it
@@ -161,7 +161,6 @@ software project managed by Us.
     any limited remedy to the maximum extent possible under law.
 
 Us
-Christopher Lourenco, and all IP-Chol co-authors:
-Timothy A. Davis
+Christopher Lourenco, and all REF-Chol co-authors:
 Erick Moreno-Centeno
 
