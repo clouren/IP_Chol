@@ -1,3 +1,12 @@
+***IMPORTANT***
+
+This code is no longer supported/updated. Please refer to our SPEX repository for the SPEX Cholesky Factorization:
+www.github.com/clouren/SPEX
+
+***************
+
+
+
 This code is for exactly solving sparse SPD linear systems
 
 It comprises both an Roundoff-Error-Free (REF) Up-Looking and REF Left-Looking 
